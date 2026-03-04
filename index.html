@@ -365,7 +365,7 @@
 
         /* Cart Modal */
         .cart-items {
-            max-height: 300px;
+            max-height: 250px;
             overflow-y: auto;
         }
 
@@ -388,6 +388,70 @@
         .cart-item-price {
             color: #e01a22;
             font-size: 0.9rem;
+        }
+        
+        .cart-item-subtotal {
+            color: #333;
+            font-weight: bold;
+            font-size: 0.85rem;
+            margin-top: 2px;
+        }
+        
+        /* Receipt Summary */
+        .receipt-summary {
+            background: #f9f9f9;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            border: 1px dashed #ccc;
+        }
+        
+        .receipt-line {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.3rem 0;
+            font-size: 0.95rem;
+        }
+        
+        .receipt-total {
+            font-weight: bold;
+            font-size: 1.2rem;
+            border-top: 2px solid #333;
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            color: #e01a22;
+        }
+        
+        .receipt-item-count {
+            text-align: center;
+            color: #666;
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+        }
+        
+        .cart-buttons {
+            margin-top: 1rem;
+        }
+        
+        .receipt-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+        }
+        
+        .btn-outline {
+            flex: 1;
+            padding: 0.6rem;
+            background: white;
+            color: #333;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        
+        .btn-outline:hover {
+            background: #f5f5f5;
         }
 
         .cart-item-controls {
@@ -414,6 +478,17 @@
             font-weight: bold;
             min-width: 30px;
             text-align: center;
+        }
+        
+        .qty-input {
+            margin: 0 0.2rem;
+            width: 50px;
+            text-align: center;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 14px;
+            padding: 2px;
         }
 
         .remove-item {
@@ -627,7 +702,6 @@
         }
 
         .product-modal-btn {
-            width: 100%;
             padding: 0.9rem;
             background: #e01a22;
             color: white;
@@ -636,6 +710,44 @@
             font-size: 1rem;
             font-weight: bold;
             cursor: pointer;
+            flex: 1;
+            margin: 0 0.25rem;
+        }
+        
+        .product-modal-buttons {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        .cancel-btn {
+            background-color: #666;
+        }
+        
+        .cancel-btn:hover {
+            background-color: #555;
+        }
+        
+        .add-btn:hover {
+            background-color: #c01520;
+        }
+        
+        .product-modal-quantity {
+            margin: 1rem 0;
+            padding: 1rem 0;
+            border-top: 1px solid #eee;
+        }
+        
+        .product-modal-quantity label {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+        
+        .quantity-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
         .product-modal-btn:disabled {
@@ -684,8 +796,8 @@
         </div>
     </header>
 
-    <!-- User Info Bar -->
-    <div class="user-info-bar" id="userInfoBar">
+    <!-- User Info Bar (hidden until needed) -->
+    <div class="user-info-bar" id="userInfoBar" style="display: none;">
         <div>
             <span data-translate="welcome">Welcome</span>, <span id="displayUserName"></span> | 📞 <span id="displayUserPhone"></span>
         </div>
@@ -745,18 +857,44 @@
             <span class="close" onclick="closeCartModal()">&times;</span>
             <h2 data-translate="yourCart">🛒 Your Cart</h2>
             
-            <div class="cart-items" id="cartItems">
-                <div class="empty-cart" data-translate="emptyCart">Your cart is empty</div>
+            <div id="receiptContent">
+                <div class="cart-items" id="cartItems">
+                    <div class="empty-cart" data-translate="emptyCart">Your cart is empty</div>
+                </div>
+                
+                <div class="receipt-summary" id="receiptSummary" style="display: none;">
+                    <div class="receipt-line">
+                        <span data-translate="subtotal">Subtotal</span>
+                        <span id="subtotalAmount">$0</span>
+                    </div>
+                    <div class="receipt-line receipt-total">
+                        <span data-translate="total">Total</span>
+                        <span id="totalAmount">$0</span>
+                    </div>
+                    <div class="receipt-item-count">
+                        <span id="totalItemCount">0</span> <span data-translate="items">items</span>
+                    </div>
+                </div>
             </div>
             
-            <div class="cart-total" id="cartTotal" style="display: none;">
-                <span data-translate="total">Total</span>: <span id="totalAmount">$0</span>
+            <div class="cart-buttons" id="cartButtons" style="display: none;">
+                <button class="btn btn-primary" id="placeOrderBtn" onclick="placeOrder()" data-translate="placeOrder">
+                    📦 Place Order
+                </button>
+                <div class="receipt-actions">
+                    <button class="btn btn-outline" onclick="printReceipt()" title="Print Receipt">
+                        🖨️ <span data-translate="print">Print</span>
+                    </button>
+                    <button class="btn btn-outline" onclick="downloadReceipt()" title="Download Receipt">
+                        📥 <span data-translate="download">Download</span>
+                    </button>
+                </div>
+                <button class="btn btn-secondary" onclick="clearCart()" data-translate="clearCart">Clear Cart</button>
             </div>
             
-            <button class="btn btn-primary" id="placeOrderBtn" onclick="placeOrder()" style="display: none;" data-translate="placeOrder">
-                📦 Place Order
-            </button>
-            <button class="btn btn-secondary" onclick="clearCart()" data-translate="clearCart">Clear Cart</button>
+            <div id="emptyCartClear" style="display: none;">
+                <button class="btn btn-secondary" onclick="clearCart()" data-translate="clearCart">Clear Cart</button>
+            </div>
         </div>
     </div>
 
@@ -785,8 +923,24 @@
                     <span id="productModalStock" class="product-modal-stock"></span>
                     <p id="productModalPrice" class="product-modal-price"></p>
                     <p id="productModalDescription" class="product-modal-description"></p>
+                    
+                    <!-- Quantity Selector -->
+                    <div class="product-modal-quantity">
+                        <label for="modalQuantity">Quantity:</label>
+                        <div class="quantity-controls">
+                            <button class="qty-btn" onclick="updateModalQuantity(-1)">-</button>
+                            <input type="number" id="modalQuantity" class="qty-input" min="1" max="999" value="1" 
+                                   onchange="setModalQuantity(this.value)" onclick="this.select()">
+                            <button class="qty-btn" onclick="updateModalQuantity(1)">+</button>
+                        </div>
+                    </div>
                 </div>
-                <button id="productModalBtn" class="product-modal-btn" onclick="addToCartFromModal()" data-translate="addToCart">Add to Cart</button>
+                
+                <!-- Action Buttons -->
+                <div class="product-modal-buttons">
+                    <button id="productModalCancelBtn" class="product-modal-btn cancel-btn" onclick="closeProductModal()" data-translate="cancel">Cancel</button>
+                    <button id="productModalAddBtn" class="product-modal-btn add-btn" onclick="addToCartFromModal()" data-translate="addToCart">Add to Cart</button>
+                </div>
             </div>
         </div>
     </div>
@@ -825,6 +979,7 @@
                 inStock: 'In Stock',
                 outOfStock: 'Out of Stock',
                 addToCart: 'Add to Cart',
+                cancel: 'Cancel',
                 
                 // Sign Up Modal
                 yourInfo: '📝 Your Information',
@@ -843,11 +998,14 @@
                 // Cart Modal
                 yourCart: '🛒 Your Cart',
                 emptyCart: 'Your cart is empty',
+                subtotal: 'Subtotal',
                 total: 'Total',
                 placeOrder: '📦 Place Order',
                 clearCart: 'Clear Cart',
                 items: 'items',
                 each: 'each',
+                print: 'Print',
+                download: 'Download',
                 
                 // Success Modal
                 orderSuccess: 'Order Placed Successfully!',
@@ -884,6 +1042,7 @@
                 inStock: 'មានស្តុក',
                 outOfStock: 'អស់ស្តុក',
                 addToCart: 'ដាក់ក្នុងកន្ត្រក',
+                cancel: 'បោះបង់',
                 
                 // Sign Up Modal
                 yourInfo: '📝 ព័ត៌មានរបស់អ្នក',
@@ -902,11 +1061,14 @@
                 // Cart Modal
                 yourCart: '🛒 កន្ត្រករបស់អ្នក',
                 emptyCart: 'កន្ត្រករបស់អ្នកគឺទទេ',
+                subtotal: 'សរុបរង',
                 total: 'សរុប',
                 placeOrder: '📦 បញ្ជាទិញ',
                 clearCart: 'សម្អាតកន្ត្រក',
                 items: 'មុខទំនិញ',
                 each: 'នីមួយៗ',
+                print: 'បោះពុម្ព',
+                download: 'ទាញយក',
                 
                 // Success Modal
                 orderSuccess: 'បានបញ្ជាទិញដោយជោគជ័យ!',
@@ -1066,10 +1228,7 @@
             updateLangButton();
             loadProductsFromSheet();
             
-            // Check if user is signed up
-            if (!userInfo) {
-                setTimeout(() => openSignupModal(), 500);
-            }
+            // User info will be collected when they place order
         });
 
         // ========== LOAD PRODUCTS FROM GOOGLE SHEETS ==========
@@ -1219,12 +1378,15 @@
             if (stockNum > 0) {
                 stockEl.textContent = t.inStock + ' (' + stockNum + ')';
                 stockEl.className = 'product-modal-stock instock';
-                document.getElementById('productModalBtn').disabled = false;
+                document.getElementById('productModalAddBtn').disabled = false;
             } else {
                 stockEl.textContent = t.outOfStock;
                 stockEl.className = 'product-modal-stock outofstock';
-                document.getElementById('productModalBtn').disabled = true;
+                document.getElementById('productModalAddBtn').disabled = true;
             }
+            
+            // Reset quantity to 1 when opening modal
+            document.getElementById('modalQuantity').value = 1;
             
             document.getElementById('productModal').classList.add('active');
         };
@@ -1245,8 +1407,29 @@
             const product = allProducts[currentProductIndex];
             if (!product) return;
             
-            addToCart(product.name, '$' + product.price);
+            const quantity = parseInt(document.getElementById('modalQuantity').value) || 1;
+            
+            // Add items one by one based on selected quantity
+            for (let i = 0; i < quantity; i++) {
+                addToCart(product.name, '$' + product.price);
+            }
+            
             closeProductModal();
+        };
+        
+        // Modal quantity functions
+        const updateModalQuantity = (change) => {
+            const input = document.getElementById('modalQuantity');
+            let newValue = parseInt(input.value) + change;
+            if (newValue < 1) newValue = 1;
+            if (newValue > 999) newValue = 999;
+            input.value = newValue;
+        };
+        
+        const setModalQuantity = (value) => {
+            const quantity = parseInt(value) || 1;
+            const input = document.getElementById('modalQuantity');
+            input.value = Math.min(Math.max(quantity, 1), 999);
         };
 
         const updateCategoryButtons = () => {
@@ -1266,7 +1449,17 @@
 
         // ========== USER INFO FUNCTIONS ==========
         const openSignupModal = () => {
-            document.getElementById('signupModal').classList.add('active');
+            // Close cart modal first to avoid overlap
+            document.getElementById('cartModal').classList.remove('active');
+            
+            const modal = document.getElementById('signupModal');
+            modal.style.display = 'flex';  
+            modal.classList.add('active');
+            modal.style.zIndex = '3000'; // Ensure it's on top
+            setTimeout(() => initSignupMap(), 100);
+            modal.style.display = 'flex';  // Override the hidden style
+            modal.classList.add('active');
+            setTimeout(() => initSignupMap(), 100);
             setTimeout(() => initSignupMap(), 100);
             
             // Load existing data if any
@@ -1280,7 +1473,9 @@
         };
 
         const closeSignupModal = () => {
-            document.getElementById('signupModal').classList.remove('active');
+            const modal = document.getElementById('signupModal');
+            modal.classList.remove('active');
+            modal.style.display = 'none';  // Force it back to hidden
         };
 
         const initSignupMap = () => {
@@ -1368,14 +1563,15 @@
             userInfo = JSON.parse(localStorage.getItem('userInfo'));
             const t = translations[currentLang];
             
+            // Update user info display when signed up
             if (userInfo) {
                 document.getElementById('displayUserName').textContent = userInfo.name;
                 document.getElementById('displayUserPhone').textContent = userInfo.phone;
-                document.getElementById('userInfoBar').classList.add('active');
-                document.getElementById('profileBtnText').textContent = t.profile;
+                document.getElementById('userInfoBar').style.display = 'block';
+                document.getElementById('profileBtnText').textContent = translations[currentLang].profile;
             } else {
-                document.getElementById('userInfoBar').classList.remove('active');
-                document.getElementById('profileBtnText').textContent = t.signUp;
+                document.getElementById('userInfoBar').style.display = 'none';
+                document.getElementById('profileBtnText').textContent = translations[currentLang].signUp;
             }
         };
 
@@ -1423,28 +1619,41 @@
 
         const renderCart = () => {
             const cartItemsContainer = document.getElementById('cartItems');
-            const cartTotal = document.getElementById('cartTotal');
-            const placeOrderBtn = document.getElementById('placeOrderBtn');
+            const receiptSummary = document.getElementById('receiptSummary');
+            const cartButtons = document.getElementById('cartButtons');
+            const emptyCartClear = document.getElementById('emptyCartClear');
             const t = translations[currentLang];
             
             if (cart.length === 0) {
                 cartItemsContainer.innerHTML = `<div class="empty-cart">${t.emptyCart}</div>`;
-                cartTotal.style.display = 'none';
-                placeOrderBtn.style.display = 'none';
+                receiptSummary.style.display = 'none';
+                cartButtons.style.display = 'none';
+                emptyCartClear.style.display = 'block';
                 return;
             }
             
             let html = '';
+            let totalPrice = 0;
+            let totalItems = 0;
+            
             cart.forEach((item, index) => {
+                const priceNum = parseFloat(item.price.replace('$', '')) || 0;
+                const itemTotal = priceNum * item.quantity;
+                totalPrice += itemTotal;
+                totalItems += item.quantity;
+                
                 html += `
                     <div class="cart-item">
                         <div class="cart-item-info">
                             <div class="cart-item-name">${item.name}</div>
-                            <div class="cart-item-price">${item.price} ${t.each}</div>
+                            <div class="cart-item-price">${item.price} x ${item.quantity}</div>
+                            <div class="cart-item-subtotal">= $${itemTotal.toFixed(2)}</div>
                         </div>
                         <div class="cart-item-controls">
                             <button class="qty-btn" onclick="updateQuantity(${index}, -1)">-</button>
-                            <span class="qty-display">${item.quantity}</span>
+                            <input type="number" class="qty-input" min="1" max="999" value="${item.quantity}" 
+                                   onchange="setQuantity(${index}, this.value)" 
+                                   onclick="this.select()">
                             <button class="qty-btn" onclick="updateQuantity(${index}, 1)">+</button>
                             <button class="remove-item" onclick="removeItem(${index})">🗑</button>
                         </div>
@@ -1453,12 +1662,126 @@
             });
             
             cartItemsContainer.innerHTML = html;
-            cartTotal.style.display = 'block';
-            placeOrderBtn.style.display = 'block';
+            receiptSummary.style.display = 'block';
+            cartButtons.style.display = 'block';
+            emptyCartClear.style.display = 'none';
             
-            // Calculate total (simplified - just shows item count)
-            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-            document.getElementById('totalAmount').textContent = `${totalItems} ${t.items}`;
+            // Update totals
+            document.getElementById('subtotalAmount').textContent = `$${totalPrice.toFixed(2)}`;
+            document.getElementById('totalAmount').textContent = `$${totalPrice.toFixed(2)}`;
+            document.getElementById('totalItemCount').textContent = totalItems;
+        };
+        
+        // Print Receipt Function
+        const printReceipt = () => {
+            const t = translations[currentLang];
+            let receiptHTML = `
+                <html>
+                <head>
+                    <title>Sambo Store - Receipt</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 20px; max-width: 400px; margin: 0 auto; }
+                        h1 { text-align: center; color: #e01a22; }
+                        .store-info { text-align: center; margin-bottom: 20px; border-bottom: 2px dashed #ccc; padding-bottom: 10px; }
+                        .item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
+                        .item-name { flex: 1; }
+                        .item-qty { width: 60px; text-align: center; }
+                        .item-price { width: 80px; text-align: right; }
+                        .total-section { margin-top: 20px; border-top: 2px solid #333; padding-top: 10px; }
+                        .total-line { display: flex; justify-content: space-between; font-size: 1.2em; font-weight: bold; }
+                        .footer { text-align: center; margin-top: 30px; color: #666; font-size: 0.9em; }
+                        .date { text-align: center; color: #999; margin-bottom: 20px; }
+                    </style>
+                </head>
+                <body>
+                    <h1>🛒 Sambo Store</h1>
+                    <div class="store-info">
+                        <p>Thank you for your order!</p>
+                    </div>
+                    <div class="date">${new Date().toLocaleString()}</div>
+                    <div class="items">
+                        <div class="item" style="font-weight: bold; border-bottom: 2px solid #333;">
+                            <span class="item-name">Item</span>
+                            <span class="item-qty">Qty</span>
+                            <span class="item-price">Price</span>
+                        </div>
+            `;
+            
+            let totalPrice = 0;
+            cart.forEach(item => {
+                const priceNum = parseFloat(item.price.replace('$', '')) || 0;
+                const itemTotal = priceNum * item.quantity;
+                totalPrice += itemTotal;
+                receiptHTML += `
+                    <div class="item">
+                        <span class="item-name">${item.name}</span>
+                        <span class="item-qty">x${item.quantity}</span>
+                        <span class="item-price">$${itemTotal.toFixed(2)}</span>
+                    </div>
+                `;
+            });
+            
+            receiptHTML += `
+                    </div>
+                    <div class="total-section">
+                        <div class="total-line">
+                            <span>Total:</span>
+                            <span>$${totalPrice.toFixed(2)}</span>
+                        </div>
+                    </div>
+                    <div class="footer">
+                        <p>Thank you for shopping with us!</p>
+                        <p>Sambo Store</p>
+                    </div>
+                </body>
+                </html>
+            `;
+            
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(receiptHTML);
+            printWindow.document.close();
+            printWindow.print();
+        };
+        
+        // Download Receipt Function
+        const downloadReceipt = () => {
+            let receiptText = '================================\\n';
+            receiptText += '       SAMBO STORE RECEIPT\\n';
+            receiptText += '================================\\n';
+            receiptText += `Date: ${new Date().toLocaleString()}\\n`;
+            receiptText += '--------------------------------\\n';
+            receiptText += 'ITEMS:\\n';
+            receiptText += '--------------------------------\\n';
+            
+            let totalPrice = 0;
+            let totalItems = 0;
+            
+            cart.forEach(item => {
+                const priceNum = parseFloat(item.price.replace('$', '')) || 0;
+                const itemTotal = priceNum * item.quantity;
+                totalPrice += itemTotal;
+                totalItems += item.quantity;
+                receiptText += `${item.name}\\n`;
+                receiptText += `  ${item.quantity} x ${item.price} = $${itemTotal.toFixed(2)}\\n`;
+            });
+            
+            receiptText += '--------------------------------\\n';
+            receiptText += `TOTAL ITEMS: ${totalItems}\\n`;
+            receiptText += `TOTAL: $${totalPrice.toFixed(2)}\\n`;
+            receiptText += '================================\\n';
+            receiptText += 'Thank you for shopping with us!\\n';
+            receiptText += '       Sambo Store\\n';
+            receiptText += '================================\\n';
+            
+            const blob = new Blob([receiptText.replace(/\\\\n/g, '\\n')], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `sambo-store-receipt-${Date.now()}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         };
 
         const updateQuantity = (index, change) => {
@@ -1466,6 +1789,21 @@
             
             if (cart[index].quantity <= 0) {
                 cart.splice(index, 1);
+            } else if (cart[index].quantity > 999) {
+                cart[index].quantity = 999;
+            }
+            
+            localStorage.setItem('cart', JSON.stringify(cart));
+            updateCartCount();
+            renderCart();
+        };
+        
+        const setQuantity = (index, newValue) => {
+            const quantity = parseInt(newValue) || 1;
+            if (quantity <= 0) {
+                cart.splice(index, 1);
+            } else {
+                cart[index].quantity = Math.min(quantity, 999);
             }
             
             localStorage.setItem('cart', JSON.stringify(cart));
@@ -1495,30 +1833,8 @@
             const t = translations[currentLang];
             // Check if user is signed up
             if (!userInfo) {
-                alert(t.alertSignUp);
                 openSignupModal();
                 return;
-            }
-            
-            // Check if customer is manually blocked
-            const hist = getCustomerHistory(userInfo.phone);
-            if (hist.blocked) {
-                alert('❌ Your account has been blocked. Please contact support.');
-                return;
-            }
-            
-            // Check customer risk level (optional blocking)
-            const risk = getCustomerRisk(userInfo.phone);
-            if (risk.level === 'high') {
-                // Block high-risk customers (50%+ cancellation rate)
-                alert(`⚠️ Your order cannot be processed.\n\nReason: ${hist.cancellations} cancellations out of ${hist.orders} orders.\n\nPlease contact support.`);
-                return;
-            }
-            if (risk.level === 'medium') {
-                // Warn but allow medium-risk customers (25-50% cancellation rate)
-                if (!confirm(`⚠️ WARNING: You have ${hist.cancellations} cancellations out of ${hist.orders} orders.\n\nContinue with this order?`)) {
-                    return;
-                }
             }
             
             if (cart.length === 0) {
