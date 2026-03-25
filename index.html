@@ -806,9 +806,6 @@
 
     <nav class="category-bar">
         <button class="category-item active" onclick="filterMenu('all', this)" data-translate="all">All</button>
-        <button class="category-item" onclick="filterMenu('blanket', this)" data-translate="blanket">Blanket</button>
-        <button class="category-item" onclick="filterMenu('tablecloth', this)" data-translate="tablecloth">Tablecloth</button>
-        <button class="category-item" onclick="filterMenu('pillowsheet', this)" data-translate="pillowSheet">Pillow Sheet</button>
     </nav>
 
     <!-- Products Container -->
@@ -1249,7 +1246,14 @@
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const products = await response.json();
                 
-                allProducts = products.filter(p => p.name && p.name.trim() !== '');
+                // Normalize all keys to lowercase to handle any sheet column casing
+                const normalized = products.map(p => {
+                    const obj = {};
+                    Object.keys(p).forEach(k => { obj[k.toLowerCase().trim()] = p[k]; });
+                    return obj;
+                });
+                
+                allProducts = normalized.filter(p => p.name && p.name.toString().trim() !== '');
                 categories.clear();
                 allProducts.forEach(p => {
                     if (p.category) categories.add(p.category.toLowerCase());
