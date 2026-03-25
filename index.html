@@ -1310,7 +1310,7 @@
                     const globalIndex = allProducts.findIndex(p => p.id === product.id);
                     
                     html += `
-                        <div class="menu-card" data-category="${categoryKey}" data-name="${name}" data-price="${product.price}" onclick="openProductModal(${globalIndex})" style="cursor: pointer;">
+                        <div class="menu-card" data-category="${categoryKey}" data-name="${name}" data-price="${product.pricess}" onclick="openProductModal(${globalIndex})" style="cursor: pointer;">
                             <span class="stock-badge ${stockClass}">${stockText}</span>
                             <img src="${firstImage}" alt="${name}" onerror="this.src='https://via.placeholder.com/200?text=No+Image'">
                             <div class="card-body">
@@ -1318,10 +1318,10 @@
                                 <p class="item-name">${name}</p>
                                 <p class="item-category" data-translate="${categoryKey}">${categoryDisplay}</p>
                                 <div class="price-row">
-                                    <span class="item-price">${product.price}៛</span>
+                                    <span class="item-price">${product.pricess}</span>
                                 </div>
                             </div>
-                            <button class="add-to-cart-btn" onclick="event.stopPropagation(); addToCart('${name.replace(/'/g, "\\'")}', '${product.price}៛')" ${disabled}>${t.addToCart}</button>
+                            <button class="add-to-cart-btn" onclick="event.stopPropagation(); addToCart('${name.replace(/'/g, "\\'")}', '${product.pricess}')" ${disabled}>${t.addToCart}</button>
                         </div>
                     `;
                 });
@@ -1373,7 +1373,7 @@
             const categoryDisplay = t[categoryKey] || product.category;
             document.getElementById('productModalCategory').textContent = categoryDisplay;
             
-            document.getElementById('productModalPrice').textContent = product.price + '៛';
+            document.getElementById('productModalPrice').textContent = product.pricess;
             document.getElementById('productModalDescription').textContent = product.description || '';
             
             // Stock status
@@ -1415,7 +1415,7 @@
             
             // Add items one by one based on selected quantity
             for (let i = 0; i < quantity; i++) {
-                addToCart(product.name, product.price + '៛');
+                addToCart(product.name, product.pricess);
             }
             
             closeProductModal();
