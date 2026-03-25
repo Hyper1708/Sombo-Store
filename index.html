@@ -865,11 +865,11 @@
                 <div class="receipt-summary" id="receiptSummary" style="display: none;">
                     <div class="receipt-line">
                         <span data-translate="subtotal">Subtotal</span>
-                        <span id="subtotalAmount">$0</span>
+                        <span id="subtotalAmount">0៛</span>
                     </div>
                     <div class="receipt-line receipt-total">
                         <span data-translate="total">Total</span>
-                        <span id="totalAmount">$0</span>
+                        <span id="totalAmount">0៛</span>
                     </div>
                     <div class="receipt-item-count">
                         <span id="totalItemCount">0</span> <span data-translate="items">items</span>
@@ -1314,10 +1314,10 @@
                                 <p class="item-name">${name}</p>
                                 <p class="item-category" data-translate="${categoryKey}">${categoryDisplay}</p>
                                 <div class="price-row">
-                                    <span class="item-price">$${product.price}</span>
+                                    <span class="item-price">${Number(product.price).toLocaleString()}៛</span>
                                 </div>
                             </div>
-                            <button class="add-to-cart-btn" onclick="event.stopPropagation(); addToCart('${name.replace(/'/g, "\\'")}', '$${product.price}')" ${disabled}>${t.addToCart}</button>
+                            <button class="add-to-cart-btn" onclick="event.stopPropagation(); addToCart('${name.replace(/'/g, "\\'")}', '${product.price}៛')" ${disabled}>${t.addToCart}</button>
                         </div>
                     `;
                 });
@@ -1369,7 +1369,7 @@
             const categoryDisplay = t[categoryKey] || product.category;
             document.getElementById('productModalCategory').textContent = categoryDisplay;
             
-            document.getElementById('productModalPrice').textContent = '$' + product.price;
+            document.getElementById('productModalPrice').textContent = Number(product.price).toLocaleString() + '៛';
             document.getElementById('productModalDescription').textContent = product.description || '';
             
             // Stock status
@@ -1411,7 +1411,7 @@
             
             // Add items one by one based on selected quantity
             for (let i = 0; i < quantity; i++) {
-                addToCart(product.name, '$' + product.price);
+                addToCart(product.name, product.price + '៛');
             }
             
             closeProductModal();
@@ -1637,7 +1637,7 @@
             let totalItems = 0;
             
             cart.forEach((item, index) => {
-                const priceNum = parseFloat(item.price.replace('$', '')) || 0;
+                const priceNum = parseFloat(item.price.replace('៛', '')) || 0;
                 const itemTotal = priceNum * item.quantity;
                 totalPrice += itemTotal;
                 totalItems += item.quantity;
@@ -1647,7 +1647,7 @@
                         <div class="cart-item-info">
                             <div class="cart-item-name">${item.name}</div>
                             <div class="cart-item-price">${item.price} x ${item.quantity}</div>
-                            <div class="cart-item-subtotal">= $${itemTotal.toFixed(2)}</div>
+                            <div class="cart-item-subtotal">= ${itemTotal.toLocaleString()}៛</div>
                         </div>
                         <div class="cart-item-controls">
                             <button class="qty-btn" onclick="updateQuantity(${index}, -1)">-</button>
@@ -1667,8 +1667,8 @@
             emptyCartClear.style.display = 'none';
             
             // Update totals
-            document.getElementById('subtotalAmount').textContent = `$${totalPrice.toFixed(2)}`;
-            document.getElementById('totalAmount').textContent = `$${totalPrice.toFixed(2)}`;
+            document.getElementById('subtotalAmount').textContent = `${totalPrice.toLocaleString()}៛`;
+            document.getElementById('totalAmount').textContent = `${totalPrice.toLocaleString()}៛`;
             document.getElementById('totalItemCount').textContent = totalItems;
         };
         
@@ -1709,14 +1709,14 @@
             
             let totalPrice = 0;
             cart.forEach(item => {
-                const priceNum = parseFloat(item.price.replace('$', '')) || 0;
+                const priceNum = parseFloat(item.price.replace('៛', '')) || 0;
                 const itemTotal = priceNum * item.quantity;
                 totalPrice += itemTotal;
                 receiptHTML += `
                     <div class="item">
                         <span class="item-name">${item.name}</span>
                         <span class="item-qty">x${item.quantity}</span>
-                        <span class="item-price">$${itemTotal.toFixed(2)}</span>
+                        <span class="item-price">${itemTotal.toLocaleString()}៛</span>
                     </div>
                 `;
             });
@@ -1726,7 +1726,7 @@
                     <div class="total-section">
                         <div class="total-line">
                             <span>Total:</span>
-                            <span>$${totalPrice.toFixed(2)}</span>
+                            <span>${totalPrice.toLocaleString()}៛</span>
                         </div>
                     </div>
                     <div class="footer">
@@ -1757,17 +1757,17 @@
             let totalItems = 0;
             
             cart.forEach(item => {
-                const priceNum = parseFloat(item.price.replace('$', '')) || 0;
+                const priceNum = parseFloat(item.price.replace('៛', '')) || 0;
                 const itemTotal = priceNum * item.quantity;
                 totalPrice += itemTotal;
                 totalItems += item.quantity;
                 receiptText += `${item.name}\\n`;
-                receiptText += `  ${item.quantity} x ${item.price} = $${itemTotal.toFixed(2)}\\n`;
+                receiptText += `  ${item.quantity} x ${item.price} = ${itemTotal.toLocaleString()}៛\\n`;
             });
             
             receiptText += '--------------------------------\\n';
             receiptText += `TOTAL ITEMS: ${totalItems}\\n`;
-            receiptText += `TOTAL: $${totalPrice.toFixed(2)}\\n`;
+            receiptText += `TOTAL: ${totalPrice.toLocaleString()}៛\\n`;
             receiptText += '================================\\n';
             receiptText += 'Thank you for shopping with us!\\n';
             receiptText += '       Sambo Store\\n';
