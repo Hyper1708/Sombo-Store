@@ -1314,7 +1314,7 @@
                                 <p class="item-name">${name}</p>
                                 <p class="item-category" data-translate="${categoryKey}">${categoryDisplay}</p>
                                 <div class="price-row">
-                                    <span class="item-price">${Number(product.price).toLocaleString()}៛</span>
+                                    <span class="item-price">${product.price}៛</span>
                                 </div>
                             </div>
                             <button class="add-to-cart-btn" onclick="event.stopPropagation(); addToCart('${name.replace(/'/g, "\\'")}', '${product.price}៛')" ${disabled}>${t.addToCart}</button>
@@ -1369,7 +1369,7 @@
             const categoryDisplay = t[categoryKey] || product.category;
             document.getElementById('productModalCategory').textContent = categoryDisplay;
             
-            document.getElementById('productModalPrice').textContent = Number(product.price).toLocaleString() + '៛';
+            document.getElementById('productModalPrice').textContent = product.price + '៛';
             document.getElementById('productModalDescription').textContent = product.description || '';
             
             // Stock status
