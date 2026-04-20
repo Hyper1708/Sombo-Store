@@ -2538,12 +2538,15 @@
                 // Deeplink mode: show QR + Pay Now
                 currentDeeplink = result.abapay_deeplink || null;
 
-                // Display QR image
+                // Display QR image — API returns qrImage (base64) or qrString
                 let qrUrl = '';
-                if (result.checkout_qr_url) {
+                if (result.qrImage) {
+                    qrUrl = result.qrImage;
+                } else if (result.checkout_qr_url) {
                     qrUrl = result.checkout_qr_url;
-                } else if (result.qr_string) {
-                    qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=' + encodeURIComponent(result.qr_string);
+                } else if (result.qrString || result.qr_string) {
+                    const qrData = result.qrString || result.qr_string;
+                    qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=' + encodeURIComponent(qrData);
                 }
 
                 document.getElementById('paymentLoading').style.display = 'none';
