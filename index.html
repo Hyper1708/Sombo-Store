@@ -1075,6 +1075,67 @@
             color: #555;
             margin-bottom: 0.4rem;
         }
+
+        .payment-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 0.75rem 0;
+            font-size: 0.9rem;
+            color: #555;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ffa000;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .status-dot.confirmed {
+            background: #4CAF50;
+            animation: none;
+        }
+
+        .status-dot.failed {
+            background: #e53935;
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.8); }
+        }
+
+        .payment-loading {
+            padding: 2rem 0;
+            text-align: center;
+        }
+
+        .payment-loading .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #eee;
+            border-top-color: #005b96;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        .payway-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            background: #f0f7ff;
+            border: 1px solid #c5ddf5;
+            border-radius: 5px;
+            padding: 0.2rem 0.6rem;
+            font-size: 0.75rem;
+            color: #005b96;
+            margin-top: 0.5rem;
+        }
     </style>
 </head>
 <body>
@@ -1221,30 +1282,54 @@
         <div class="modal-content">
             <span class="close" onclick="cancelPayment()">&times;</span>
             <div class="payment-header">
-                <h2>💳 <span data-translate="paymentTitle">KHQR Payment</span></h2>
-                <p data-translate="paymentSubtitle">Scan or tap Pay Now to pay with your banking app</p>
+                <h2>💳 <span data-translate="paymentTitle">ABA PayWay Payment</span></h2>
+                <p data-translate="paymentSubtitle">Scan QR or tap Pay Now to complete payment</p>
             </div>
             <div class="payment-body">
                 <div class="payment-amount" id="paymentAmount">0៛</div>
                 <div class="payment-merchant">🏪 Sambo Store</div>
-                <div class="qr-container">
-                    <img id="khqrImage" src="media Picture/photo_2026-04-20_15-26-02.jpg" alt="KHQR" style="width: 220px; height: 220px; object-fit: contain; border-radius: 10px;">
+
+                <!-- Loading state -->
+                <div id="paymentLoading" class="payment-loading" style="display:none;">
+                    <div class="spinner"></div>
+                    <p data-translate="creatingPayment">Creating secure payment...</p>
                 </div>
-                <div class="payment-steps">
-                    <ol>
-                        <li data-translate="payStep1">Tap "Pay Now" to open your banking app</li>
-                        <li data-translate="payStep2">Or screenshot & scan the QR code above</li>
-                        <li data-translate="payStep3">Complete the payment in your banking app</li>
-                        <li data-translate="payStep4">Come back here - your order will be confirmed</li>
-                    </ol>
+
+                <!-- QR / Deeplink state -->
+                <div id="paymentQRSection" style="display:none;">
+                    <div class="qr-container">
+                        <img id="paymentQRImage" src="" alt="Payment QR" style="width: 220px; height: 220px; object-fit: contain; border-radius: 10px;">
+                    </div>
+                    <div id="paymentStatus" class="payment-status">
+                        <span class="status-dot" id="statusDot"></span>
+                        <span id="statusText" data-translate="waitingPayment">Waiting for payment...</span>
+                    </div>
+                    <div class="payment-steps">
+                        <ol>
+                            <li data-translate="payStep1">Scan the QR code with your banking app</li>
+                            <li data-translate="payStep2">Or tap "Pay Now" to open ABA app</li>
+                            <li data-translate="payStep3">Complete the payment</li>
+                            <li data-translate="payStep4">Payment will be verified automatically</li>
+                        </ol>
+                    </div>
+                    <div class="payway-badge">🔒 Secured by ABA PayWay</div>
                 </div>
+
+                <!-- Error state -->
+                <div id="paymentError" style="display:none; padding:1rem 0;">
+                    <p id="paymentErrorMsg" style="color:#e53935; font-size:0.9rem;"></p>
+                </div>
+
                 <div class="payment-buttons">
                     <button class="btn btn-danger" onclick="cancelPayment()" data-translate="cancelPayment">Cancel</button>
-                    <button class="btn btn-success" onclick="payNow()" data-translate="payNow">💳 Pay Now</button>
+                    <button class="btn btn-success" id="payNowBtn" onclick="payNow()" style="display:none;" data-translate="payNow">💳 Pay Now</button>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Hidden form for hosted checkout fallback -->
+    <form id="paywayHostedForm" method="POST" style="display:none;"></form>
 
     <!-- Store Info Modal -->
     <div id="storeInfoModal" class="modal store-info-modal">
@@ -1376,17 +1461,9 @@
         const TELEGRAM_BOT_TOKEN = '8701262180:AAHfSZmkPbbh4aa2QWZAQO11aFnbDhHNZsk';
         const TELEGRAM_CHAT_ID = '-5265993832';
         
-        // KHQR / ABA Payment Config
-        const KHQR_MERCHANT = {
-            bakongAccount: '092210506@abaakhpp',  // phone@bankswift
-            accountNumber: '003599846',
-            merchantName: 'Sambo Store',
-            merchantCity: 'Phnom Penh',
-            merchantCategory: '5999',  // Miscellaneous Retail
-            currencyKHR: '116',
-            currencyUSD: '840',
-            exchangeRate: 4100  // Approximate KHR per USD - update as needed
-        };
+        // ABA PayWay Configuration
+        // UPDATE this URL after deploying the Cloudflare Worker
+        const PAYWAY_WORKER_URL = 'https://sambo-store-pay.YOUR-SUBDOMAIN.workers.dev';
         
         // Google Sheets Web App URL for loading products
         const PRODUCTS_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbwcRg8ovt2kGtubWqaaYtgUjPK7s4SzYdB2DI2kQIGKZ2hOZYkJvudq7CBC9U7QH6BD/exec';
@@ -1450,14 +1527,19 @@
                 continueShopping: 'Continue Shopping',
                 
                 // Payment
-                paymentTitle: 'KHQR Payment',
-                paymentSubtitle: 'Scan or tap Pay Now to pay with your banking app',
-                payStep1: 'Tap "Pay Now" to open your banking app',
-                payStep2: 'Or screenshot & scan the QR code above',
-                payStep3: 'Complete the payment in your banking app',
-                payStep4: 'Come back here - your order will be confirmed',
+                paymentTitle: 'ABA PayWay Payment',
+                paymentSubtitle: 'Scan QR or tap Pay Now to complete payment',
+                payStep1: 'Scan the QR code with your banking app',
+                payStep2: 'Or tap "Pay Now" to open ABA app',
+                payStep3: 'Complete the payment',
+                payStep4: 'Payment will be verified automatically',
                 cancelPayment: 'Cancel',
                 payNow: '\ud83d\udcb3 Pay Now',
+                creatingPayment: 'Creating secure payment...',
+                waitingPayment: 'Waiting for payment...',
+                paymentVerified: '\u2705 Payment verified!',
+                paymentFailed: '\u274c Payment failed',
+                paymentTimeout: '\u23f0 Payment timed out',
                 paymentPending: '\u23f3 PENDING PAYMENT',
                 paymentConfirmed: '\u2705 PAYMENT CONFIRMED',
                 receiptIntro: 'Thank you for your order!',
@@ -1561,14 +1643,19 @@
                 alertOrderFailed: 'បរាជ័យក្នុងការបញ្ជាទិញ។ សូមព្យាយាមម្តងទៀត ឬទាក់ទងមកយើងដោយផ្ទាល់។',
                 
                 // Payment
-                paymentTitle: 'ការបង់ប្រាក់ KHQR',
-                paymentSubtitle: 'ស្កេន ឬចុច Pay Now ដើម្បីបង់ប្រាក់តាមរយៈកម្មវិធីធនាគារ',
-                payStep1: 'ចុច "Pay Now" ដើម្បីបើកកម្មវិធីធនាគាររបស់អ្នក',
-                payStep2: 'ឬ screenshot និងស្កេន QR code ខាងលើ',
-                payStep3: 'បញ្ចប់ការបង់ប្រាក់ក្នុងកម្មវិធីធនាគាររបស់អ្នក',
-                payStep4: 'ត្រឡប់មកវិញ - ការបញ្ជាទិញរបស់អ្នកនឹងត្រូវបានបញ្ជាក់',
+                paymentTitle: 'បង់ប្រាក់តាម ABA PayWay',
+                paymentSubtitle: 'ស្កេន QR ឬចុច Pay Now ដើម្បីបង់ប្រាក់',
+                payStep1: 'ស្កេន QR code ដោយប្រើកម្មវិធីធនាគារ',
+                payStep2: 'ឬចុច "Pay Now" ដើម្បីបើកកម្មវិធី ABA',
+                payStep3: 'បញ្ចប់ការបង់ប្រាក់',
+                payStep4: 'ការបង់ប្រាក់នឹងត្រូវបានផ្ទៀងផ្ទាត់ដោយស្វ័យប្រវត្តិ',
                 cancelPayment: 'បោះបង់',
                 payNow: '💳 បង់ប្រាក់ឥឡូវនេះ',
+                creatingPayment: 'កំពុងបង្កើតការបង់ប្រាក់...',
+                waitingPayment: 'រង់ចាំការបង់ប្រាក់...',
+                paymentVerified: '✅ ការបង់ប្រាក់ត្រូវបានផ្ទៀងផ្ទាត់!',
+                paymentFailed: '❌ ការបង់ប្រាក់បរាជ័យ',
+                paymentTimeout: '⏰ ការបង់ប្រាក់ផុតកំណត់',
                 paymentPending: '⏳ រង់ចាំការបង់ប្រាក់',
                 paymentConfirmed: '✅ បានបង់ប្រាក់រួចហើយ',
                 receiptIntro: 'សូមអរគុណសម្រាប់ការបញ្ជាទិញរបស់អ្នក!',
@@ -2357,19 +2444,17 @@
             }
         };
 
-        // ========== ORDER & PAYMENT FUNCTIONS ==========
+        // ========== ORDER & PAYMENT FUNCTIONS (ABA PayWay) ==========
         let pendingOrderData = null;
+        let currentTranId = null;
+        let currentDeeplink = null;
+        let paymentPollInterval = null;
+        let paymentPollTimeout = null;
 
         const placeOrder = async () => {
             const t = translations[currentLang];
-            if (!userInfo) {
-                openSignupModal();
-                return;
-            }
-            if (cart.length === 0) {
-                alert(t.alertEmptyCart);
-                return;
-            }
+            if (!userInfo) { openSignupModal(); return; }
+            if (cart.length === 0) { alert(t.alertEmptyCart); return; }
 
             // Calculate total
             let totalPrice = 0;
@@ -2386,49 +2471,176 @@
                 timestamp: new Date().toISOString()
             };
 
-            // Show payment modal
+            // Show payment modal in loading state
             document.getElementById('paymentAmount').textContent = totalPrice.toLocaleString() + '៛';
+            document.getElementById('paymentLoading').style.display = 'block';
+            document.getElementById('paymentQRSection').style.display = 'none';
+            document.getElementById('paymentError').style.display = 'none';
+            document.getElementById('payNowBtn').style.display = 'none';
             closeCartModal();
             document.getElementById('paymentModal').classList.add('active');
             tgShowBackButton();
+
+            try {
+                // Build items for PayWay
+                const items = cart.map(item => ({
+                    name: item.name,
+                    quantity: item.quantity,
+                    price: parseFloat(item.price.replace('៛', '').replace('$', '').replace(/,/g, '')) || 0
+                }));
+
+                const siteUrl = window.location.origin + window.location.pathname;
+
+                // Call Worker to create payment
+                const response = await fetch(PAYWAY_WORKER_URL + '/api/purchase', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        amount: totalPrice,
+                        currency: 'KHR',
+                        items: items,
+                        firstname: userInfo.name,
+                        phone: userInfo.phone,
+                        site_url: siteUrl
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.error) throw new Error(result.error);
+
+                currentTranId = result.tran_id;
+
+                // Save to localStorage for hosted checkout return
+                localStorage.setItem('pendingPaywayOrder', JSON.stringify({
+                    ...pendingOrderData,
+                    tran_id: currentTranId
+                }));
+
+                if (result.fallback === 'hosted') {
+                    // Hosted checkout: auto-submit form to PayWay
+                    const form = document.getElementById('paywayHostedForm');
+                    form.action = result.checkout_url;
+                    form.innerHTML = '';
+                    Object.entries(result.fields).forEach(([key, val]) => {
+                        if (val) {
+                            const input = document.createElement('input');
+                            input.type = 'hidden';
+                            input.name = key;
+                            input.value = val;
+                            form.appendChild(input);
+                        }
+                    });
+                    form.submit();
+                    return;
+                }
+
+                // Deeplink mode: show QR + Pay Now
+                currentDeeplink = result.abapay_deeplink || null;
+
+                // Display QR image
+                let qrUrl = '';
+                if (result.checkout_qr_url) {
+                    qrUrl = result.checkout_qr_url;
+                } else if (result.qr_string) {
+                    qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=' + encodeURIComponent(result.qr_string);
+                }
+
+                document.getElementById('paymentLoading').style.display = 'none';
+                document.getElementById('paymentQRSection').style.display = 'block';
+                if (qrUrl) document.getElementById('paymentQRImage').src = qrUrl;
+                if (currentDeeplink) document.getElementById('payNowBtn').style.display = 'block';
+
+                // Reset status indicator
+                document.getElementById('statusDot').className = 'status-dot';
+                document.getElementById('statusText').textContent = t.waitingPayment || 'Waiting for payment...';
+
+                // Start polling for payment confirmation
+                startPaymentPolling();
+
+            } catch (err) {
+                document.getElementById('paymentLoading').style.display = 'none';
+                document.getElementById('paymentError').style.display = 'block';
+                document.getElementById('paymentErrorMsg').textContent = err.message;
+            }
         };
 
-        // Deep link to banking app
+        // Open banking app via deep link
         const payNow = () => {
-            if (!pendingOrderData) return;
+            if (currentDeeplink) {
+                window.open(currentDeeplink, '_blank');
+            }
+        };
 
-            // ABA Pay link - opens ABA app or fallback to web
-            const abaDeepLink = `https://pay.ababank.com/28VRTeFmvZ7Fur4x9`;
-            window.open(abaDeepLink, '_blank');
+        // Poll PayWay for payment status
+        const startPaymentPolling = () => {
+            stopPaymentPolling();
 
-            // When user returns from banking app, auto-submit order
-            const handleReturn = () => {
-                document.removeEventListener('visibilitychange', onVisibilityChange);
-                setTimeout(() => {
-                    if (pendingOrderData) {
-                        submitOrder();
+            paymentPollInterval = setInterval(async () => {
+                if (!currentTranId) return;
+                try {
+                    const res = await fetch(PAYWAY_WORKER_URL + '/api/check', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ tran_id: currentTranId })
+                    });
+                    const result = await res.json();
+                    const t = translations[currentLang];
+
+                    if (result.data) {
+                        if (result.data.payment_status_code === 0) {
+                            // APPROVED
+                            stopPaymentPolling();
+                            document.getElementById('statusDot').className = 'status-dot confirmed';
+                            document.getElementById('statusText').textContent = t.paymentVerified || '✅ Payment verified!';
+                            document.getElementById('payNowBtn').style.display = 'none';
+                            if (isTelegramMiniApp) tgApp.HapticFeedback.notificationOccurred('success');
+                            setTimeout(() => submitOrder(), 1200);
+                        } else if (result.data.payment_status_code === 3 || result.data.payment_status_code === 7) {
+                            // DECLINED or CANCELLED
+                            stopPaymentPolling();
+                            document.getElementById('statusDot').className = 'status-dot failed';
+                            document.getElementById('statusText').textContent = t.paymentFailed || '❌ Payment failed';
+                        }
+                        // status 2 = PENDING → keep polling
                     }
-                }, 1500);
-            };
-            const onVisibilityChange = () => {
-                if (document.visibilityState === 'visible') {
-                    handleReturn();
+                } catch (e) {
+                    console.log('Payment poll error:', e);
                 }
-            };
-            document.addEventListener('visibilitychange', onVisibilityChange);
+            }, 3000);
+
+            // Auto-timeout after 10 minutes
+            paymentPollTimeout = setTimeout(() => {
+                if (paymentPollInterval) {
+                    stopPaymentPolling();
+                    const t = translations[currentLang];
+                    document.getElementById('statusDot').className = 'status-dot failed';
+                    document.getElementById('statusText').textContent = t.paymentTimeout || '⏰ Payment timed out';
+                }
+            }, 600000);
+        };
+
+        const stopPaymentPolling = () => {
+            if (paymentPollInterval) { clearInterval(paymentPollInterval); paymentPollInterval = null; }
+            if (paymentPollTimeout) { clearTimeout(paymentPollTimeout); paymentPollTimeout = null; }
         };
 
         const cancelPayment = () => {
+            stopPaymentPolling();
+            currentTranId = null;
+            currentDeeplink = null;
+            localStorage.removeItem('pendingPaywayOrder');
             document.getElementById('paymentModal').classList.remove('active');
             pendingOrderData = null;
             tgHideBackButton();
         };
 
-        // Submit order after payment
+        // Submit order after verified payment
         const submitOrder = async () => {
             if (!pendingOrderData) return;
             const t = translations[currentLang];
             const data = pendingOrderData;
+            const tranId = currentTranId;
 
             document.getElementById('paymentModal').classList.remove('active');
             document.getElementById('loadingOverlay').classList.add('active');
@@ -2447,14 +2659,16 @@
                 const paymentDisplay = data.totalPrice.toLocaleString() + '៛';
 
                 // Order message to store owner
-                const message = `${riskIndicator}🛍️ *NEW ORDER*${isTelegramMiniApp ? ' (Mini App)' : ''} 💳 *PAID via KHQR*\n\n` +
+                const message = `${riskIndicator}🛍️ *NEW ORDER*${isTelegramMiniApp ? ' (Mini App)' : ''} ✅ *PAID via ABA PayWay*\n\n` +
                     `👤 *Customer:* ${data.userInfo.name}\n` +
                     `📞 *Phone:* ${data.userInfo.phone}\n` +
                     `${data.userInfo.telegramUsername ? '💬 *Telegram:* ' + data.userInfo.telegramUsername + '\n' : ''}` +
                     `${data.userInfo.note ? '📝 *Note:* ' + data.userInfo.note + '\n' : ''}` +
                     `📍 *Location:* ${data.userInfo.address}\n` +
                     `🗺️ *Map:* [Open in Google Maps](${googleMapsLink})\n\n` +
-                    `💰 *Payment:* ${paymentDisplay} (KHQR)\n\n` +
+                    `💰 *Payment:* ${paymentDisplay}\n` +
+                    `🔐 *Tran ID:* ${tranId || 'N/A'}\n` +
+                    `💳 *Method:* ABA PayWay (Verified)\n\n` +
                     `📊 *Customer History:*\n` +
                     `   • Orders: ${customerHistory.orders}\n` +
                     `   • Cancellations: ${customerHistory.cancellations}\n` +
@@ -2489,7 +2703,8 @@
                         `📍 *Address:* ${data.userInfo.address}\n\n` +
                         `📦 *${t.receiptItems || 'Order Items'}:*\n${receiptItems}\n\n` +
                         `💰 *${t.receiptTotal || 'Total'}:* ${paymentDisplay}\n` +
-                        `✅ *Status:* Paid via KHQR\n` +
+                        `✅ *Status:* Paid via ABA PayWay\n` +
+                        `🔐 *Tran ID:* ${tranId || 'N/A'}\n` +
                         `📅 *Date:* ${new Date().toLocaleString()}\n\n` +
                         `────────────────────\n` +
                         `${t.receiptNote || 'Thank you for shopping with Sambo Store!'}`;
@@ -2524,6 +2739,7 @@
                                 lng: data.userInfo.lng,
                                 items: JSON.stringify(data.cart),
                                 payment: paymentDisplay,
+                                tran_id: tranId,
                                 timestamp: data.timestamp
                             })
                         });
@@ -2537,6 +2753,9 @@
                 localStorage.setItem('cart', JSON.stringify(cart));
                 updateCartCount();
                 pendingOrderData = null;
+                currentTranId = null;
+                currentDeeplink = null;
+                localStorage.removeItem('pendingPaywayOrder');
 
                 document.getElementById('loadingOverlay').classList.remove('active');
                 document.getElementById('successModal').classList.add('active');
@@ -2557,6 +2776,45 @@
             tgHideBackButton();
             updateTelegramMainButton();
         };
+
+        // Handle return from PayWay hosted checkout
+        (function checkPaywayReturn() {
+            const params = new URLSearchParams(window.location.search);
+            const payway_tran = params.get('payway_tran');
+            if (!payway_tran) return;
+
+            // Clean URL
+            window.history.replaceState({}, '', window.location.pathname);
+
+            // Restore pending order from localStorage
+            const saved = JSON.parse(localStorage.getItem('pendingPaywayOrder') || 'null');
+            if (!saved || saved.tran_id !== payway_tran) return;
+
+            pendingOrderData = saved;
+            currentTranId = payway_tran;
+
+            // Verify payment then submit
+            document.getElementById('loadingOverlay').classList.add('active');
+            fetch(PAYWAY_WORKER_URL + '/api/check', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tran_id: payway_tran })
+            })
+            .then(r => r.json())
+            .then(result => {
+                if (result.data && result.data.payment_status_code === 0) {
+                    submitOrder();
+                } else {
+                    document.getElementById('loadingOverlay').classList.remove('active');
+                    alert('Payment not confirmed. Please try again.');
+                    localStorage.removeItem('pendingPaywayOrder');
+                }
+            })
+            .catch(() => {
+                document.getElementById('loadingOverlay').classList.remove('active');
+                alert('Could not verify payment. Please contact support.');
+            });
+        })();
 
         // ========== STORE INFO MODAL ==========
         let storeInfoMap = null;

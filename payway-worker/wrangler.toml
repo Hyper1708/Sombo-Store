@@ -1,0 +1,13 @@
+name = "sambo-store-pay"
+main = "src/index.js"
+compatibility_date = "2024-09-01"
+
+# Sandbox environment variables
+[vars]
+PAYWAY_BASE_URL = "https://checkout-sandbox.payway.com.kh"
+MERCHANT_ID = "ec475039"
+
+# For production:
+# 1. Change PAYWAY_BASE_URL to "https://checkout.payway.com.kh"
+# 2. Update MERCHANT_ID to production merchant ID
+# 3. Set API key as secret: npx wrangler secret put API_KEY
