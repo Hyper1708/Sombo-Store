@@ -96,6 +96,71 @@
             font-size: 0.7rem;
             padding: 2px 6px;
             border-radius: 50%;
+            transition: transform 0.2s;
+        }
+
+        .cart-count.bump {
+            transform: scale(1.5);
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: rgba(0,0,0,0.82);
+            color: white;
+            padding: 0.65rem 1.4rem;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            z-index: 9999;
+            opacity: 0;
+            transition: opacity 0.25s, transform 0.25s;
+            pointer-events: none;
+            white-space: nowrap;
+            max-width: 90vw;
+            text-align: center;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Search Bar */
+        .search-bar {
+            padding: 0.6rem 1rem;
+            background: #fff;
+            border-bottom: 1px solid #eee;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.6rem 1rem 0.6rem 2.4rem;
+            border: 1.5px solid #ddd;
+            border-radius: 25px;
+            font-size: 0.95rem;
+            outline: none;
+            background: #f9f9f9 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") no-repeat 0.75rem center;
+            box-sizing: border-box;
+        }
+
+        .search-input:focus {
+            border-color: #e01a22;
+            background-color: #fff;
+        }
+
+        /* No results */
+        .no-results {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #999;
+        }
+
+        .no-results-icon {
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
         }
 
         .category-bar {
@@ -334,6 +399,22 @@
         .form-group input:focus {
             outline: none;
             border-color: #e01a22;
+            box-shadow: 0 0 0 3px rgba(224,26,34,0.1);
+        }
+
+        .form-group input.error {
+            border-color: #e53935;
+        }
+
+        .field-error {
+            color: #e53935;
+            font-size: 0.78rem;
+            margin-top: 0.25rem;
+            display: none;
+        }
+
+        .field-error.show {
+            display: block;
         }
 
         #signupMap {
@@ -1146,14 +1227,17 @@
         <p style="margin-top: 1rem;" data-translate="sendingOrder">Sending order...</p>
     </div>
 
+    <!-- Toast notification -->
+    <div id="toast" class="toast"></div>
+
     <header>
         <button class="store-name-btn" onclick="openStoreInfoModal()">Sambo Store</button>
         <div class="header-buttons">
             <button class="lang-toggle" onclick="toggleLanguage()" id="langBtn">KH</button>
-            <button class="header-btn" onclick="openSignupModal()">
+            <button class="header-btn" onclick="openSignupModal()" id="profileBtn" aria-label="Profile">
                 <span id="profileBtnText" data-translate="signUp">Sign Up</span>
             </button>
-            <button class="header-btn" onclick="openCartModal()">
+            <button class="header-btn" onclick="openCartModal()" aria-label="Cart">
                 🛒 <span data-translate="cart">Cart</span>
                 <span class="cart-count" id="cartCount">0</span>
             </button>
@@ -1172,6 +1256,11 @@
         <button class="category-item active" onclick="filterMenu('all', this)" data-translate="all">All</button>
     </nav>
 
+    <!-- Search Bar -->
+    <div class="search-bar">
+        <input type="search" id="searchInput" class="search-input" placeholder="🔍 Search products..." oninput="searchProducts(this.value)" autocomplete="off">
+    </div>
+
     <!-- Products Container -->
     <div id="products-container">
         <div id="loading-products" style="text-align: center; padding: 3rem;">
@@ -1189,17 +1278,19 @@
             
             <div class="form-group">
                 <label for="userName" data-translate="yourName">Your Name *</label>
-                <input type="text" id="userName" data-placeholder="enterName" placeholder="Enter your full name">
+                <input type="text" id="userName" data-placeholder="enterName" placeholder="Enter your full name" maxlength="100" autocomplete="name">
+                <div class="field-error" id="nameError"></div>
             </div>
             
             <div class="form-group">
                 <label for="userPhone" data-translate="phoneNumber">Phone Number *</label>
-                <input type="tel" id="userPhone" data-placeholder="enterPhone" placeholder="Enter your phone number">
+                <input type="tel" id="userPhone" data-placeholder="enterPhone" placeholder="e.g. 012 345 678" maxlength="20" autocomplete="tel" inputmode="tel">
+                <div class="field-error" id="phoneError"></div>
             </div>
             
             <div class="form-group">
                 <label for="userNote" data-translate="additionalInfo">Additional Information</label>
-                <input type="text" id="userNote" data-placeholder="enterNote" placeholder="Any special instructions or notes">
+                <input type="text" id="userNote" data-placeholder="enterNote" placeholder="Any special instructions or notes" maxlength="200">
             </div>
             
             <p class="map-instruction" data-translate="mapInstruction">📍 Drag the map to move the pin to your delivery location:</p>
@@ -1458,12 +1549,14 @@
         };
 
         // ========== CONFIGURATION ==========
-        const TELEGRAM_BOT_TOKEN = '8701262180:AAHfSZmkPbbh4aa2QWZAQO11aFnbDhHNZsk';
-        const TELEGRAM_CHAT_ID = '-5265993832';
+        // Telegram credentials are handled by the Cloudflare Worker — never expose here
+        // const TELEGRAM_BOT_TOKEN removed for security
         
         // ABA PayWay Configuration
         // UPDATE this URL after deploying the Cloudflare Worker
         const PAYWAY_WORKER_URL = 'https://sambo-store-pay.sambo-store.workers.dev';
+        // Shared secret for /api/notify — must match NOTIFY_SECRET Worker secret
+        const NOTIFY_SECRET = 'sk-sambo-notify-2026';
         
         // Google Sheets Web App URL for loading products
         const PRODUCTS_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbwcRg8ovt2kGtubWqaaYtgUjPK7s4SzYdB2DI2kQIGKZ2hOZYkJvudq7CBC9U7QH6BD/exec';
@@ -1471,7 +1564,15 @@
         // Google Sheets Web App URL for saving orders
         const GOOGLE_SHEETS_URL = '';
 
-        // ========== TRANSLATIONS ==========
+        // ========== TOAST NOTIFICATIONS ==========
+        let toastTimer = null;
+        const showToast = (msg, duration = 2200) => {
+            const el = document.getElementById('toast');
+            el.textContent = msg;
+            el.classList.add('show');
+            if (toastTimer) clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => el.classList.remove('show'), duration);
+        };
         let currentLang = localStorage.getItem('lang') || 'en';
         
         const translations = {
@@ -2132,25 +2233,44 @@
             const lng = document.getElementById('userLng').value;
             const t = translations[currentLang];
 
-            if (!name) {
-                alert(t.alertEnterName);
-                return;
+            // Clear previous errors
+            ['nameError','phoneError'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) { el.textContent = ''; el.classList.remove('show'); }
+            });
+            document.getElementById('userName').classList.remove('error');
+            document.getElementById('userPhone').classList.remove('error');
+
+            let valid = true;
+            if (!name || name.length < 2) {
+                const el = document.getElementById('nameError');
+                el.textContent = t.alertEnterName || 'Please enter your full name (at least 2 characters).';
+                el.classList.add('show');
+                document.getElementById('userName').classList.add('error');
+                valid = false;
             }
-            if (!phone) {
-                alert(t.alertEnterPhone);
-                return;
+            // Cambodian phone: starts with 0, 9–10 digits, or starts with +855
+            const phoneClean = phone.replace(/[\s\-().]/g, '');
+            const phoneValid = /^(0[0-9]{8,9}|\+855[0-9]{8,9})$/.test(phoneClean);
+            if (!phone || !phoneValid) {
+                const el = document.getElementById('phoneError');
+                el.textContent = t.alertEnterPhone || 'Please enter a valid Cambodian phone number (e.g. 012 345 678).';
+                el.classList.add('show');
+                document.getElementById('userPhone').classList.add('error');
+                valid = false;
             }
             if (!lat || !lng) {
-                alert(t.alertSelectLocation);
-                return;
+                showToast(t.alertSelectLocation || '📍 Please drop the pin on your delivery location.');
+                valid = false;
             }
+            if (!valid) return;
 
-            userInfo = { name, phone, note, address, lat, lng };
+            userInfo = { name, phone: phoneClean, note, address, lat, lng };
             localStorage.setItem('userInfo', JSON.stringify(userInfo));
             
             loadUserInfo();
             closeSignupModal();
-            alert(t.alertSaved);
+            showToast('✅ ' + (t.alertSaved || 'Profile saved!'));
         };
 
         const loadUserInfo = () => {
@@ -2183,14 +2303,13 @@
             updateCartCount();
             
             // Show feedback
-            const btn = event.target;
-            const originalText = btn.textContent;
-            btn.textContent = '✓ Added!';
-            btn.style.background = '#4CAF50';
-            setTimeout(() => {
-                btn.textContent = originalText;
-                btn.style.background = '#e01a22';
-            }, 1000);
+            showToast('🛍️ Added to cart!');
+            // Bump the cart badge
+            const badge = document.getElementById('cartCount');
+            badge.classList.remove('bump');
+            void badge.offsetWidth; // reflow
+            badge.classList.add('bump');
+            setTimeout(() => badge.classList.remove('bump'), 300);
         };
 
         const updateCartCount = () => {
@@ -2224,11 +2343,14 @@
             tgShowBackButton();
         };
 
+        let checkoutStarted = false; // set true when user taps Place Order
+
         const closeCartModal = () => {
-            // Track cancellation if user had items in cart
-            if (cart.length > 0 && userInfo) {
+            // Only count as cancellation if the user explicitly started checkout
+            if (checkoutStarted && cart.length > 0 && userInfo) {
                 recordCancellation(userInfo.phone);
             }
+            checkoutStarted = false;
             document.getElementById('cartModal').classList.remove('active');
             tgHideBackButton();
         };
@@ -2454,7 +2576,9 @@
         const placeOrder = async () => {
             const t = translations[currentLang];
             if (!userInfo) { openSignupModal(); return; }
-            if (cart.length === 0) { alert(t.alertEmptyCart); return; }
+            if (cart.length === 0) { showToast(t.alertEmptyCart || 'Your cart is empty'); return; }
+
+            checkoutStarted = true; // mark that user intentionally started checkout
 
             // Calculate total
             let totalPrice = 0;
@@ -2652,8 +2776,15 @@
                 const customerHistory = recordOrder(data.userInfo.phone);
                 const risk = getCustomerRisk(data.userInfo.phone);
 
-                const orderItems = data.cart.map(item => `• ${item.name} x ${item.quantity} (${item.price})`).join('\n');
-                const googleMapsLink = `https://www.google.com/maps?q=${data.userInfo.lat},${data.userInfo.lng}`;
+                // Sanitize user-supplied text to prevent Markdown injection
+                const escapeMd = (str) => String(str || '').replace(/[*_`[\]]/g, '\\$&');
+                const safeName = escapeMd(data.userInfo.name);
+                const safePhone = escapeMd(data.userInfo.phone);
+                const safeAddress = escapeMd(data.userInfo.address);
+                const safeNote = escapeMd(data.userInfo.note);
+
+                const orderItems = data.cart.map(item => `• ${escapeMd(item.name)} x ${item.quantity} (${escapeMd(item.price)})`).join('\n');
+                const googleMapsLink = `https://www.google.com/maps?q=${encodeURIComponent(data.userInfo.lat)},${encodeURIComponent(data.userInfo.lng)}`;
 
                 let riskIndicator = '';
                 if (risk.level === 'high') riskIndicator = '🚨 ';
@@ -2663,11 +2794,11 @@
 
                 // Order message to store owner
                 const message = `${riskIndicator}🛍️ *NEW ORDER*${isTelegramMiniApp ? ' (Mini App)' : ''} ✅ *PAID via ABA PayWay*\n\n` +
-                    `👤 *Customer:* ${data.userInfo.name}\n` +
-                    `📞 *Phone:* ${data.userInfo.phone}\n` +
-                    `${data.userInfo.telegramUsername ? '💬 *Telegram:* ' + data.userInfo.telegramUsername + '\n' : ''}` +
-                    `${data.userInfo.note ? '📝 *Note:* ' + data.userInfo.note + '\n' : ''}` +
-                    `📍 *Location:* ${data.userInfo.address}\n` +
+                    `👤 *Customer:* ${safeName}\n` +
+                    `📞 *Phone:* ${safePhone}\n` +
+                    `${data.userInfo.telegramUsername ? '💬 *Telegram:* ' + escapeMd(data.userInfo.telegramUsername) + '\n' : ''}` +
+                    `${safeNote ? '📝 *Note:* ' + safeNote + '\n' : ''}` +
+                    `📍 *Location:* ${safeAddress}\n` +
                     `🗺️ *Map:* [Open in Google Maps](${googleMapsLink})\n\n` +
                     `💰 *Payment:* ${paymentDisplay}\n` +
                     `🔐 *Tran ID:* ${tranId || 'N/A'}\n` +
@@ -2675,57 +2806,39 @@
                     `📊 *Customer History:*\n` +
                     `   • Orders: ${customerHistory.orders}\n` +
                     `   • Cancellations: ${customerHistory.cancellations}\n` +
-                    `${risk.warning ? '   • ' + risk.warning + '\n' : ''}` +
+                    `${risk.warning ? '   • ' + escapeMd(risk.warning) + '\n' : ''}` +
                     `\n📦 *Order Items:*\n${orderItems}\n\n` +
                     `⏰ *Time:* ${new Date().toLocaleString()}`;
 
-                // Send to store owner
-                const telegramResponse = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                // Send to store owner via Worker (keeps bot token off the client)
+                const notifyPayload = { secret: NOTIFY_SECRET, message };
+                if (isTelegramMiniApp && tgApp.initDataUnsafe && tgApp.initDataUnsafe.user) {
+                    const userId = tgApp.initDataUnsafe.user.id;
+                    const receiptItems = data.cart.map(item => `  • ${escapeMd(item.name)} x${item.quantity} — ${escapeMd(item.price)}`).join('\n');
+                    notifyPayload.receipt = {
+                        chat_id: userId,
+                        text: `🧳 *Sambo Store — Invoice*\n────────────────────\n\n` +
+                            `👤 *Customer:* ${safeName}\n` +
+                            `📞 *Phone:* ${safePhone}\n` +
+                            `📍 *Address:* ${safeAddress}\n\n` +
+                            `📦 *${t.receiptItems || 'Order Items'}:*\n${receiptItems}\n\n` +
+                            `💰 *${t.receiptTotal || 'Total'}:* ${paymentDisplay}\n` +
+                            `✅ *Status:* Paid via ABA PayWay\n` +
+                            `🔐 *Tran ID:* ${tranId || 'N/A'}\n` +
+                            `📅 *Date:* ${new Date().toLocaleString()}\n\n` +
+                            `────────────────────\n` +
+                            `${t.receiptNote || 'Thank you for shopping with Sambo Store!'}`
+                    };
+                }
+
+                const telegramResponse = await fetch(`${PAYWAY_WORKER_URL}/api/notify`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        chat_id: TELEGRAM_CHAT_ID,
-                        text: message,
-                        parse_mode: 'Markdown',
-                        disable_web_page_preview: false
-                    })
+                    body: JSON.stringify(notifyPayload)
                 });
 
                 const telegramResult = await telegramResponse.json();
-                if (!telegramResult.ok) throw new Error(telegramResult.description);
-
-                // Send receipt to customer (if in Telegram Mini App)
-                if (isTelegramMiniApp && tgApp.initDataUnsafe && tgApp.initDataUnsafe.user) {
-                    const userId = tgApp.initDataUnsafe.user.id;
-                    const receiptItems = data.cart.map(item => `  • ${item.name} x${item.quantity} — ${item.price}`).join('\n');
-
-                    const receipt = `🧳 *Sambo Store — Invoice*\n` +
-                        `────────────────────\n\n` +
-                        `👤 *Customer:* ${data.userInfo.name}\n` +
-                        `📞 *Phone:* ${data.userInfo.phone}\n` +
-                        `📍 *Address:* ${data.userInfo.address}\n\n` +
-                        `📦 *${t.receiptItems || 'Order Items'}:*\n${receiptItems}\n\n` +
-                        `💰 *${t.receiptTotal || 'Total'}:* ${paymentDisplay}\n` +
-                        `✅ *Status:* Paid via ABA PayWay\n` +
-                        `🔐 *Tran ID:* ${tranId || 'N/A'}\n` +
-                        `📅 *Date:* ${new Date().toLocaleString()}\n\n` +
-                        `────────────────────\n` +
-                        `${t.receiptNote || 'Thank you for shopping with Sambo Store!'}`;
-
-                    try {
-                        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                chat_id: userId,
-                                text: receipt,
-                                parse_mode: 'Markdown'
-                            })
-                        });
-                    } catch (e) {
-                        console.log('Receipt send to customer skipped:', e);
-                    }
-                }
+                if (!telegramResult.ok) throw new Error(telegramResult.error || 'Notification failed');
 
                 // Save to Google Sheets (if configured)
                 if (GOOGLE_SHEETS_URL) {
@@ -2758,6 +2871,7 @@
                 pendingOrderData = null;
                 currentTranId = null;
                 currentDeeplink = null;
+                checkoutStarted = false;
                 localStorage.removeItem('pendingPaywayOrder');
 
                 document.getElementById('loadingOverlay').classList.remove('active');
@@ -2866,6 +2980,10 @@
             }
             element.classList.add('active');
 
+            // Clear search when switching category
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) searchInput.value = '';
+
             // Show/hide sections
             sections.forEach(section => {
                 if (category === 'all' || section.dataset.section === category) {
@@ -2873,7 +2991,52 @@
                 } else {
                     section.style.display = 'none';
                 }
+                // Show all cards within visible sections
+                section.querySelectorAll('.product-card').forEach(card => card.style.display = '');
             });
+
+            // Remove any previous no-results message
+            document.querySelectorAll('.no-results').forEach(el => el.remove());
+        };
+
+        const searchProducts = (query) => {
+            const q = query.trim().toLowerCase();
+            const sections = document.querySelectorAll('.product-section');
+            let totalVisible = 0;
+
+            // Reset category filter to all when searching
+            if (q) {
+                document.querySelectorAll('.category-item').forEach(btn => btn.classList.remove('active'));
+                const allBtn = document.querySelector('.category-item[data-translate="all"]');
+                if (allBtn) allBtn.classList.add('active');
+            }
+
+            sections.forEach(section => {
+                const cards = section.querySelectorAll('.product-card');
+                let sectionVisible = 0;
+                cards.forEach(card => {
+                    const text = card.textContent.toLowerCase();
+                    const matches = !q || text.includes(q);
+                    card.style.display = matches ? '' : 'none';
+                    if (matches) sectionVisible++;
+                });
+                section.style.display = (q === '' || sectionVisible > 0) ? 'block' : 'none';
+                totalVisible += sectionVisible;
+            });
+
+            // Show/hide no-results message
+            const container = document.getElementById('productsContainer');
+            let noResults = container.querySelector('.no-results');
+            if (q && totalVisible === 0) {
+                if (!noResults) {
+                    noResults = document.createElement('div');
+                    noResults.className = 'no-results';
+                    noResults.innerHTML = `<div class="no-results-icon">🔍</div><div>No products found for "<strong>${query.replace(/</g,'&lt;')}</strong>"</div><div style="margin-top:0.5rem;font-size:0.85rem;">Try a different keyword</div>`;
+                    container.appendChild(noResults);
+                }
+            } else if (noResults) {
+                noResults.remove();
+            }
         };
     </script>
 
