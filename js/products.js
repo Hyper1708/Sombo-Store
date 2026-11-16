@@ -108,7 +108,6 @@ const renderProducts = (products) => {
 
 // Product modal
 let currentProductIndex = -1;
-let currentProductImages = [];
 
 const openProductModal = (index) => {
     const product = allProducts[index];
@@ -117,28 +116,11 @@ const openProductModal = (index) => {
     currentProductIndex = index;
     const t = translations[currentLang];
 
-    // Handle images
-    const images = product.images ? String(product.images).split('|').map(img => fixImagePath(img)) : [];
-    currentProductImages = images;
-    const firstImage = images[0] || PLACEHOLDER_IMG;
-
-    // Set main image
-    document.getElementById('productModalImage').onerror = function() {
-        this.onerror = null;
-        this.src = PLACEHOLDER_IMG;
-    };
-    document.getElementById('productModalImage').src = firstImage;
-
-    // Set thumbnails if multiple images
-    const thumbsContainer = document.getElementById('productModalThumbs');
-    if (images.length > 1) {
-        thumbsContainer.innerHTML = images.map((img, i) =>
-            `<img src="${escapeHtml(img)}" class="product-modal-thumb ${i === 0 ? 'active' : ''}" onclick="changeProductImage(${i}, this)" onerror="this.style.display='none'">`
-        ).join('');
-        thumbsContainer.style.display = 'flex';
-    } else {
-        thumbsContainer.style.display = 'none';
-    }
+    // Photos (several separated by |) go into the slideshow, see gallery.js
+    const images = product.images
+        ? String(product.images).split('|').map(img => fixImagePath(img)).filter(Boolean)
+        : [];
+    showGallery(images, product.name);
 
     // Set product details
     document.getElementById('productModalName').textContent = product.name;
@@ -171,15 +153,8 @@ const openProductModal = (index) => {
 
 const closeProductModal = () => {
     document.getElementById('productModal').classList.remove('active');
+    stopGalleryAutoplay();
     currentProductIndex = -1;
-};
-
-const changeProductImage = (imageIndex, thumbEl) => {
-    const src = currentProductImages[imageIndex];
-    if (!src) return;
-    document.getElementById('productModalImage').src = src;
-    document.querySelectorAll('.product-modal-thumb').forEach(t => t.classList.remove('active'));
-    thumbEl.classList.add('active');
 };
 
 const addToCartFromModal = () => {

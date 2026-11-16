@@ -26,6 +26,7 @@ js/                     Plain scripts, loaded in this order from index.html
   telegram.js           Telegram Mini App integration
   customer-history.js   Per-device order and cancellation counts
   products.js           Load products, render cards, product modal, filter, search
+  gallery.js            Auto-rotating photo slideshow in the product modal
   profile.js            Sign-up form and delivery map
   cart.js               Cart state and cart modal
   receipt.js            Print and download receipts

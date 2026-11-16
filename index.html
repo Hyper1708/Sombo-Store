@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="css/base.css?v=ee5ec7ed">
     <link rel="stylesheet" href="css/catalog.css?v=506a3af6">
     <link rel="stylesheet" href="css/modals.css?v=ed4e675f">
-    <link rel="stylesheet" href="css/product-modal.css?v=d839f392">
+    <link rel="stylesheet" href="css/product-modal.css?v=5c5049a4">
     <link rel="stylesheet" href="css/store-info.css?v=352df9d1">
     <link rel="stylesheet" href="css/payment.css?v=726de8fc">
 </head>
@@ -262,7 +262,12 @@
         <div class="modal-content">
             <span class="close" onclick="closeProductModal()">&times;</span>
             <div class="product-modal-left">
-                <img id="productModalImage" class="product-modal-image" src="" alt="">
+                <div id="productGallery" class="product-gallery">
+                    <div id="gallerySlides" class="gallery-slides"></div>
+                    <button type="button" id="galleryPrev" class="gallery-nav gallery-prev" aria-label="Previous photo">&#8249;</button>
+                    <button type="button" id="galleryNext" class="gallery-nav gallery-next" aria-label="Next photo">&#8250;</button>
+                    <span id="galleryCounter" class="gallery-counter"></span>
+                </div>
                 <div id="productModalThumbs" class="product-modal-images"></div>
             </div>
             <div class="product-modal-right">
@@ -303,7 +308,8 @@
     <script src="js/i18n.js?v=52434820"></script>
     <script src="js/telegram.js?v=a608debb"></script>
     <script src="js/customer-history.js?v=ac580073"></script>
-    <script src="js/products.js?v=7ef69661"></script>
+    <script src="js/products.js?v=5e60273f"></script>
+    <script src="js/gallery.js?v=97a02f40"></script>
     <script src="js/profile.js?v=444581c5"></script>
     <script src="js/cart.js?v=a04d56c0"></script>
     <script src="js/receipt.js?v=eafec00b"></script>
