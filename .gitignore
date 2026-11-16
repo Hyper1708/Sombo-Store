@@ -1,0 +1,11 @@
+# Dependencies
+node_modules/
+
+# Cloudflare Wrangler local state and secrets
+.wrangler/
+.dev.vars
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/

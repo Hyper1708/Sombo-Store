@@ -2,7 +2,6 @@
 
 let cart = JSON.parse(localStorage.getItem('cart')) || [];
 
-// Cart functions
 const addToCart = (product, quantity = 1) => {
     const id = String(product.id ?? '').trim();
     const name = String(product.name || '');

@@ -8,7 +8,8 @@ let paymentPollTimeout = null;
 
 const placeOrder = async () => {
     const t = translations[currentLang];
-    if (!userInfo) { openSignupModal(); return; }
+    // In the Telegram Mini App a profile can exist with only the Telegram name in it
+    if (!userInfo || !userInfo.phone) { openSignupModal(); return; }
     if (cart.length === 0) { showToast(t.alertEmptyCart || 'Your cart is empty'); return; }
 
     // Estimate from the cart; the Worker prices the order from the sheet and has the final say
@@ -281,8 +282,9 @@ const closeSuccessModal = () => {
     updateTelegramMainButton();
 };
 
-// Handle return from PayWay hosted checkout
-(function checkPaywayReturn() {
+// PayWay's hosted checkout sends the customer back with ?payway_tran=<id>.
+// Pick up the saved order, confirm the payment and submit it.
+const resumeHostedCheckout = () => {
     const params = new URLSearchParams(window.location.search);
     const payway_tran = params.get('payway_tran');
     if (!payway_tran) return;
@@ -318,4 +320,4 @@ const closeSuccessModal = () => {
         document.getElementById('loadingOverlay').classList.remove('active');
         alert('Could not verify payment. Please contact support.');
     });
-})();
+};

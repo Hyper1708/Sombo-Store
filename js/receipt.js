@@ -1,6 +1,5 @@
 // Print or download a receipt for the current cart.
 
-// Print Receipt Function
 const printReceipt = () => {
     const t = translations[currentLang];
     let receiptHTML = `

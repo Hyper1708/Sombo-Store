@@ -3,12 +3,11 @@
 let allProducts = [];
 let categories = new Set();
 
-// Helper function to fix image paths
+// The sheet may hold a full path; only the file name matters
 const fixImagePath = (path) => {
     if (!path) return '';
-    // Extract just the filename and put it in media Picture/ folder
     const filename = path.trim().split(/[\\\/]/).pop();
-    return `media Picture/${filename}`;
+    return `${PRODUCT_IMAGES_DIR}/${filename}`;
 };
 
 const loadProductsFromSheet = async () => {

@@ -4,7 +4,6 @@ let userInfo = JSON.parse(localStorage.getItem('userInfo')) || null;
 let signupMap = null;
 let userMarker = null;
 
-// User info functions
 const openSignupModal = () => {
     // Close cart modal first to avoid overlap
     document.getElementById('cartModal').classList.remove('active');

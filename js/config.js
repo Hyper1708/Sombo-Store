@@ -1,15 +1,15 @@
-// Store-wide settings. PRODUCTS_SHEETS_URL must match PRODUCTS_URL in payway-worker/wrangler.toml.
+// Store-wide settings.
 
-// Telegram credentials are handled by the Cloudflare Worker — never expose here
-// const TELEGRAM_BOT_TOKEN removed for security
-
-// ABA PayWay Configuration
-// UPDATE this URL after deploying the Cloudflare Worker
+// Cloudflare Worker that talks to ABA PayWay and Telegram (see payway-worker/).
+// Bot tokens and API keys live in the Worker as secrets, never in this file.
 const PAYWAY_WORKER_URL = 'https://sambo-store-pay.sambo-store.workers.dev';
 
-// Google Sheets Web App URL for loading products
-// (the Worker reads prices from the same sheet — keep PRODUCTS_URL in wrangler.toml in sync)
+// Google Sheets web app that lists the products. The Worker reads prices from the
+// same sheet, so this must match PRODUCTS_URL in payway-worker/wrangler.toml.
 const PRODUCTS_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbwcRg8ovt2kGtubWqaaYtgUjPK7s4SzYdB2DI2kQIGKZ2hOZYkJvudq7CBC9U7QH6BD/exec';
 
-// Google Sheets Web App URL for saving orders
+// Optional Google Sheets web app that stores a copy of each order. Leave empty to skip.
 const GOOGLE_SHEETS_URL = '';
+
+// Folder that holds the product photos named in the sheet's "images" column.
+const PRODUCT_IMAGES_DIR = 'images/products';
