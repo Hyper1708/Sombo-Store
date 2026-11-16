@@ -20,6 +20,8 @@ const loadProductsFromSheet = async () => {
         const normalized = products.map(p => {
             const obj = {};
             Object.keys(p).forEach(k => { obj[k.toLowerCase().trim()] = p[k]; });
+            // Stray spaces in a category cell would otherwise create a second, duplicate category
+            if (obj.category != null) obj.category = String(obj.category).replace(/\s+/g, ' ').trim();
             return obj;
         });
 
