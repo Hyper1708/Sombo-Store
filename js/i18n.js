@@ -116,7 +116,7 @@ const translations = {
         outOfStock: 'អស់ស្តុក',
         addToCart: 'ដាក់ក្នុងកន្ត្រក',
         cancel: 'បោះបង់',
-        itemNoteLabel: 'កំណត់ចំណាំសម្រាប់យើង (ស្រេចចិត្ត)',
+        itemNoteLabel: 'កំណត់ចំណាំសម្រាប់ក្រុមការងារ',
         itemNotePlaceholder: 'ឧ. ពណ៌ ទំហំ ការវេចខ្ចប់',
 
         // Sign Up Modal
