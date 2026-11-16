@@ -1555,14 +1555,27 @@
         // ABA PayWay Configuration
         // UPDATE this URL after deploying the Cloudflare Worker
         const PAYWAY_WORKER_URL = 'https://sambo-store-pay.sambo-store.workers.dev';
-        // Shared secret for /api/notify — must match NOTIFY_SECRET Worker secret
-        const NOTIFY_SECRET = 'sk-sambo-notify-2026';
-        
+
         // Google Sheets Web App URL for loading products
+        // (the Worker reads prices from the same sheet — keep PRODUCTS_URL in wrangler.toml in sync)
         const PRODUCTS_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbwcRg8ovt2kGtubWqaaYtgUjPK7s4SzYdB2DI2kQIGKZ2hOZYkJvudq7CBC9U7QH6BD/exec';
-        
+
         // Google Sheets Web App URL for saving orders
         const GOOGLE_SHEETS_URL = '';
+
+        // ========== HELPERS ==========
+        // Escape text before putting it into HTML (product data comes from the sheet)
+        const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, ch => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[ch]));
+
+        // "15,000៛", "15000" or 15000 → 15000. The Worker uses the same rule when it charges.
+        const parsePrice = (value) => Number(String(value ?? '').replace(/[^\d.]/g, '')) || 0;
+
+        const formatKHR = (amount) => `${Math.round(amount).toLocaleString()}៛`;
+
+        // Shown when a product image is missing
+        const PLACEHOLDER_IMG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23eeeeee'/%3E%3Ctext x='100' y='106' font-family='sans-serif' font-size='16' fill='%23999999' text-anchor='middle'%3ENo Image%3C/text%3E%3C/svg%3E";
 
         // ========== TOAST NOTIFICATIONS ==========
         let toastTimer = null;
@@ -1877,24 +1890,6 @@
             }
         };
 
-        window.blockCustomer = (phone) => {
-            const history = JSON.parse(localStorage.getItem('customerHistory')) || {};
-            if (history[phone]) {
-                history[phone].blocked = true;
-                localStorage.setItem('customerHistory', JSON.stringify(history));
-                console.log(`✅ Customer ${phone} blocked`);
-            }
-        };
-
-        window.unblockCustomer = (phone) => {
-            const history = JSON.parse(localStorage.getItem('customerHistory')) || {};
-            if (history[phone]) {
-                delete history[phone].blocked;
-                localStorage.setItem('customerHistory', JSON.stringify(history));
-                console.log(`✅ Customer ${phone} unblocked`);
-            }
-        };
-
         // ========== INITIALIZATION ==========
         document.addEventListener('DOMContentLoaded', () => {
             updateCartCount();
@@ -1981,35 +1976,35 @@
                 const categoryDisplay = t[categoryKey] || category.charAt(0).toUpperCase() + category.slice(1);
                 
                 html += `
-                    <div class="product-section" data-section="${categoryKey}">
-                        <div class="section-header" data-translate="${categoryKey}">${categoryDisplay}</div>
+                    <div class="product-section" data-section="${escapeHtml(categoryKey)}">
+                        <div class="section-header" data-translate="${escapeHtml(categoryKey)}">${escapeHtml(categoryDisplay)}</div>
                         <div class="menu-grid">
                 `;
                 
-                items.forEach((product, index) => {
+                items.forEach((product) => {
                     const stockNum = parseInt(product.stock) || 0;
                     const stockClass = stockNum > 0 ? 'instock' : 'outofstock';
                     const stockText = stockClass === 'instock' ? t.inStock : t.outOfStock;
-                    const name = product.name || '';
-                    const disabled = stockClass === 'outofstock' ? 'disabled' : '';
-                    
+                    const name = escapeHtml(product.name || '');
+                    const price = formatKHR(parsePrice(product.pricess));
+
                     // Handle images (can be multiple separated by |)
-                    const images = product.images ? product.images.split('|').map(img => fixImagePath(img)) : [];
-                    const firstImage = images[0] || '';
-                    
-                    // Find global index in allProducts
-                    const globalIndex = allProducts.findIndex(p => p.id === product.id);
-                    
+                    const images = product.images ? String(product.images).split('|').map(img => fixImagePath(img)) : [];
+                    const firstImage = images[0] || PLACEHOLDER_IMG;
+
+                    // Position in allProducts (works even when ids are missing or repeated)
+                    const globalIndex = allProducts.indexOf(product);
+
                     html += `
-                        <div class="menu-card" data-category="${categoryKey}" data-name="${name}" data-price="${product.pricess}" onclick="openProductModal(${globalIndex})" style="cursor: pointer;">
+                        <div class="menu-card" data-category="${escapeHtml(categoryKey)}" data-name="${name}" data-price="${price}" onclick="openProductModal(${globalIndex})" style="cursor: pointer;">
                             <span class="stock-badge ${stockClass}">${stockText}</span>
-                            <img src="${firstImage}" alt="${name}" onerror="this.src='https://via.placeholder.com/200?text=No+Image'">
+                            <img src="${escapeHtml(firstImage)}" alt="${name}" onerror="this.onerror=null;this.src=PLACEHOLDER_IMG">
                             <div class="card-body">
-                                <p class="item-id">ID: #${product.id}</p>
+                                <p class="item-id">ID: #${escapeHtml(product.id)}</p>
                                 <p class="item-name">${name}</p>
-                                <p class="item-category" data-translate="${categoryKey}">${categoryDisplay}</p>
+                                <p class="item-category" data-translate="${escapeHtml(categoryKey)}">${escapeHtml(categoryDisplay)}</p>
                                 <div class="price-row">
-                                    <span class="item-price">${product.pricess}</span>
+                                    <span class="item-price">${price}</span>
                                 </div>
                             </div>
                         </div>
@@ -2027,29 +2022,32 @@
 
         // ========== PRODUCT MODAL ==========
         let currentProductIndex = -1;
+        let currentProductImages = [];
 
         const openProductModal = (index) => {
             const product = allProducts[index];
             if (!product) return;
-            
+
             currentProductIndex = index;
             const t = translations[currentLang];
-            
+
             // Handle images
-            const images = product.images ? product.images.split('|').map(img => fixImagePath(img)) : [];
-            const firstImage = images[0] || '';
-            
+            const images = product.images ? String(product.images).split('|').map(img => fixImagePath(img)) : [];
+            currentProductImages = images;
+            const firstImage = images[0] || PLACEHOLDER_IMG;
+
             // Set main image
-            document.getElementById('productModalImage').src = firstImage;
             document.getElementById('productModalImage').onerror = function() {
-                this.src = 'https://via.placeholder.com/400?text=No+Image';
+                this.onerror = null;
+                this.src = PLACEHOLDER_IMG;
             };
-            
+            document.getElementById('productModalImage').src = firstImage;
+
             // Set thumbnails if multiple images
             const thumbsContainer = document.getElementById('productModalThumbs');
             if (images.length > 1) {
-                thumbsContainer.innerHTML = images.map((img, i) => 
-                    `<img src="${img}" class="product-modal-thumb ${i === 0 ? 'active' : ''}" onclick="changeProductImage('${img}', this)" onerror="this.style.display='none'">`
+                thumbsContainer.innerHTML = images.map((img, i) =>
+                    `<img src="${escapeHtml(img)}" class="product-modal-thumb ${i === 0 ? 'active' : ''}" onclick="changeProductImage(${i}, this)" onerror="this.style.display='none'">`
                 ).join('');
                 thumbsContainer.style.display = 'flex';
             } else {
@@ -2063,7 +2061,7 @@
             const categoryDisplay = t[categoryKey] || product.category;
             document.getElementById('productModalCategory').textContent = categoryDisplay;
             
-            document.getElementById('productModalPrice').textContent = product.pricess;
+            document.getElementById('productModalPrice').textContent = formatKHR(parsePrice(product.pricess));
             document.getElementById('productModalDescription').textContent = product.description || '';
             
             // Stock status
@@ -2090,7 +2088,9 @@
             currentProductIndex = -1;
         };
 
-        const changeProductImage = (src, thumbEl) => {
+        const changeProductImage = (imageIndex, thumbEl) => {
+            const src = currentProductImages[imageIndex];
+            if (!src) return;
             document.getElementById('productModalImage').src = src;
             document.querySelectorAll('.product-modal-thumb').forEach(t => t.classList.remove('active'));
             thumbEl.classList.add('active');
@@ -2100,14 +2100,10 @@
             if (currentProductIndex < 0) return;
             const product = allProducts[currentProductIndex];
             if (!product) return;
-            
-            const quantity = parseInt(document.getElementById('modalQuantity').value) || 1;
-            
-            // Add items one by one based on selected quantity
-            for (let i = 0; i < quantity; i++) {
-                addToCart(product.name, product.pricess);
-            }
-            
+
+            const quantity = Math.min(Math.max(parseInt(document.getElementById('modalQuantity').value) || 1, 1), 999);
+            addToCart(product, quantity);
+
             closeProductModal();
         };
         
@@ -2131,11 +2127,11 @@
             const t = translations[currentLang];
             
             let buttonsHtml = `<button class="category-item active" onclick="filterMenu('all', this)" data-translate="all">${t.all}</button>`;
-            
+
             categories.forEach(cat => {
                 const catKey = cat.replace(/\s+/g, '');
                 const catDisplay = t[catKey] || cat.charAt(0).toUpperCase() + cat.slice(1);
-                buttonsHtml += `<button class="category-item" onclick="filterMenu('${catKey}', this)" data-translate="${catKey}">${catDisplay}</button>`;
+                buttonsHtml += `<button class="category-item" onclick="filterMenu(this.dataset.cat, this)" data-cat="${escapeHtml(catKey)}" data-translate="${escapeHtml(catKey)}">${escapeHtml(catDisplay)}</button>`;
             });
             
             categoryBar.innerHTML = buttonsHtml;
@@ -2290,13 +2286,19 @@
         };
 
         // ========== CART FUNCTIONS ==========
-        const addToCart = (name, price) => {
-            const existingItem = cart.find(item => item.name === name);
-            
+        const addToCart = (product, quantity = 1) => {
+            const id = String(product.id ?? '').trim();
+            const name = String(product.name || '');
+            // Carts saved before ids were stored only have a name to match on
+            const existingItem = cart.find(item => (id && item.id) ? item.id === id : item.name === name);
+
             if (existingItem) {
-                existingItem.quantity += 1;
+                existingItem.quantity = Math.min(existingItem.quantity + quantity, 999);
+                existingItem.id = id;
+                existingItem.price = parsePrice(product.pricess);
             } else {
-                cart.push({ name, price, quantity: 1 });
+                // The Worker re-prices every line from the sheet; price here is for display only
+                cart.push({ id, name, price: parsePrice(product.pricess), quantity });
             }
             
             localStorage.setItem('cart', JSON.stringify(cart));
@@ -2324,12 +2326,8 @@
             const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
             if (totalItems > 0) {
                 const t = translations[currentLang];
-                let totalPrice = 0;
-                cart.forEach(item => {
-                    const priceNum = parseFloat(item.price.replace('៛', '')) || 0;
-                    totalPrice += priceNum * item.quantity;
-                });
-                tgApp.MainButton.setText(`🛒 ${t.cart} (${totalItems}) - ${totalPrice.toLocaleString()}៛`);
+                const totalPrice = cart.reduce((sum, item) => sum + parsePrice(item.price) * item.quantity, 0);
+                tgApp.MainButton.setText(`🛒 ${t.cart} (${totalItems}) - ${formatKHR(totalPrice)}`);
                 tgApp.MainButton.show();
                 tgApp.MainButton.onClick(() => openCartModal());
             } else {
@@ -2343,14 +2341,7 @@
             tgShowBackButton();
         };
 
-        let checkoutStarted = false; // set true when user taps Place Order
-
         const closeCartModal = () => {
-            // Only count as cancellation if the user explicitly started checkout
-            if (checkoutStarted && cart.length > 0 && userInfo) {
-                recordCancellation(userInfo.phone);
-            }
-            checkoutStarted = false;
             document.getElementById('cartModal').classList.remove('active');
             tgHideBackButton();
         };
@@ -2375,17 +2366,17 @@
             let totalItems = 0;
             
             cart.forEach((item, index) => {
-                const priceNum = parseFloat(item.price.replace('៛', '')) || 0;
+                const priceNum = parsePrice(item.price);
                 const itemTotal = priceNum * item.quantity;
                 totalPrice += itemTotal;
                 totalItems += item.quantity;
-                
+
                 html += `
                     <div class="cart-item">
                         <div class="cart-item-info">
-                            <div class="cart-item-name">${item.name}</div>
-                            <div class="cart-item-price">${item.price} x ${item.quantity}</div>
-                            <div class="cart-item-subtotal">= ${itemTotal.toLocaleString()}៛</div>
+                            <div class="cart-item-name">${escapeHtml(item.name)}</div>
+                            <div class="cart-item-price">${formatKHR(priceNum)} x ${item.quantity}</div>
+                            <div class="cart-item-subtotal">= ${formatKHR(itemTotal)}</div>
                         </div>
                         <div class="cart-item-controls">
                             <button class="qty-btn" onclick="updateQuantity(${index}, -1)">-</button>
@@ -2405,8 +2396,8 @@
             emptyCartClear.style.display = 'none';
             
             // Update totals
-            document.getElementById('subtotalAmount').textContent = `${totalPrice.toLocaleString()}៛`;
-            document.getElementById('totalAmount').textContent = `${totalPrice.toLocaleString()}៛`;
+            document.getElementById('subtotalAmount').textContent = formatKHR(totalPrice);
+            document.getElementById('totalAmount').textContent = formatKHR(totalPrice);
             document.getElementById('totalItemCount').textContent = totalItems;
         };
         
@@ -2447,24 +2438,24 @@
             
             let totalPrice = 0;
             cart.forEach(item => {
-                const priceNum = parseFloat(item.price.replace('៛', '')) || 0;
+                const priceNum = parsePrice(item.price);
                 const itemTotal = priceNum * item.quantity;
                 totalPrice += itemTotal;
                 receiptHTML += `
                     <div class="item">
-                        <span class="item-name">${item.name}</span>
+                        <span class="item-name">${escapeHtml(item.name)}</span>
                         <span class="item-qty">x${item.quantity}</span>
-                        <span class="item-price">${itemTotal.toLocaleString()}៛</span>
+                        <span class="item-price">${formatKHR(itemTotal)}</span>
                     </div>
                 `;
             });
-            
+
             receiptHTML += `
                     </div>
                     <div class="total-section">
                         <div class="total-line">
                             <span>Total:</span>
-                            <span>${totalPrice.toLocaleString()}៛</span>
+                            <span>${formatKHR(totalPrice)}</span>
                         </div>
                     </div>
                     <div class="footer">
@@ -2483,35 +2474,26 @@
         
         // Download Receipt Function
         const downloadReceipt = () => {
-            let receiptText = '================================\\n';
-            receiptText += '       SAMBO STORE RECEIPT\\n';
-            receiptText += '================================\\n';
-            receiptText += `Date: ${new Date().toLocaleString()}\\n`;
-            receiptText += '--------------------------------\\n';
-            receiptText += 'ITEMS:\\n';
-            receiptText += '--------------------------------\\n';
-            
+            const rule = '================================';
+            const dash = '--------------------------------';
+            const lines = [rule, '       SAMBO STORE RECEIPT', rule,
+                `Date: ${new Date().toLocaleString()}`, dash, 'ITEMS:', dash];
+
             let totalPrice = 0;
             let totalItems = 0;
-            
+
             cart.forEach(item => {
-                const priceNum = parseFloat(item.price.replace('៛', '')) || 0;
+                const priceNum = parsePrice(item.price);
                 const itemTotal = priceNum * item.quantity;
                 totalPrice += itemTotal;
                 totalItems += item.quantity;
-                receiptText += `${item.name}\\n`;
-                receiptText += `  ${item.quantity} x ${item.price} = ${itemTotal.toLocaleString()}៛\\n`;
+                lines.push(item.name, `  ${item.quantity} x ${formatKHR(priceNum)} = ${formatKHR(itemTotal)}`);
             });
-            
-            receiptText += '--------------------------------\\n';
-            receiptText += `TOTAL ITEMS: ${totalItems}\\n`;
-            receiptText += `TOTAL: ${totalPrice.toLocaleString()}៛\\n`;
-            receiptText += '================================\\n';
-            receiptText += 'Thank you for shopping with us!\\n';
-            receiptText += '       Sambo Store\\n';
-            receiptText += '================================\\n';
-            
-            const blob = new Blob([receiptText.replace(/\\\\n/g, '\\n')], { type: 'text/plain' });
+
+            lines.push(dash, `TOTAL ITEMS: ${totalItems}`, `TOTAL: ${formatKHR(totalPrice)}`, rule,
+                'Thank you for shopping with us!', '       Sambo Store', rule);
+
+            const blob = new Blob([lines.join('\n') + '\n'], { type: 'text/plain;charset=utf-8' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -2578,62 +2560,59 @@
             if (!userInfo) { openSignupModal(); return; }
             if (cart.length === 0) { showToast(t.alertEmptyCart || 'Your cart is empty'); return; }
 
-            checkoutStarted = true; // mark that user intentionally started checkout
-
-            // Calculate total
-            let totalPrice = 0;
-            cart.forEach(item => {
-                const priceNum = parseFloat(item.price.replace('៛', '').replace('$', '').replace(/,/g, '')) || 0;
-                totalPrice += priceNum * item.quantity;
-            });
+            // Estimate from the cart; the Worker prices the order from the sheet and has the final say
+            const estimate = cart.reduce((sum, item) => sum + parsePrice(item.price) * item.quantity, 0);
 
             // Store pending order
             pendingOrderData = {
                 cart: [...cart],
                 userInfo: { ...userInfo },
-                totalPrice: totalPrice,
+                totalPrice: estimate,
                 timestamp: new Date().toISOString()
             };
 
             // Show payment modal in loading state
-            document.getElementById('paymentAmount').textContent = totalPrice.toLocaleString() + '៛';
+            document.getElementById('paymentAmount').textContent = formatKHR(estimate);
             document.getElementById('paymentLoading').style.display = 'block';
             document.getElementById('paymentQRSection').style.display = 'none';
             document.getElementById('paymentError').style.display = 'none';
             document.getElementById('payNowBtn').style.display = 'none';
-            closeCartModal();
+            document.getElementById('cartModal').classList.remove('active');
             document.getElementById('paymentModal').classList.add('active');
             tgShowBackButton();
 
             try {
-                // Build items for PayWay
-                const items = cart.map(item => ({
-                    name: item.name,
-                    quantity: item.quantity,
-                    price: parseFloat(item.price.replace('៛', '').replace('$', '').replace(/,/g, '')) || 0
-                }));
-
-                const siteUrl = window.location.origin + window.location.pathname;
-
-                // Call Worker to create payment
+                // Call Worker to create payment. It looks up prices itself, so only ids and
+                // quantities are sent — nothing here can change what the customer is charged.
                 const response = await fetch(PAYWAY_WORKER_URL + '/api/purchase', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        amount: totalPrice,
-                        currency: 'KHR',
-                        items: items,
-                        firstname: userInfo.name,
-                        phone: userInfo.phone,
-                        site_url: siteUrl
+                        items: cart.map(item => ({ id: item.id || '', name: item.name, quantity: item.quantity })),
+                        customer: {
+                            name: userInfo.name,
+                            phone: userInfo.phone,
+                            address: userInfo.address,
+                            note: userInfo.note,
+                            lat: userInfo.lat,
+                            lng: userInfo.lng
+                        },
+                        // Lets the Worker verify the Telegram user before sending them a receipt
+                        tg_init_data: isTelegramMiniApp ? tgApp.initData : '',
+                        lang: currentLang,
+                        site_url: window.location.origin + window.location.pathname
                     })
                 });
 
                 const result = await response.json();
 
                 if (result.error) throw new Error(result.error);
+                if (!pendingOrderData) return; // payment was cancelled while this was loading
 
                 currentTranId = result.tran_id;
+                pendingOrderData.totalPrice = result.amount;
+                pendingOrderData.orderToken = result.order_token;
+                document.getElementById('paymentAmount').textContent = formatKHR(result.amount);
 
                 // Save to localStorage for hosted checkout return
                 localStorage.setItem('pendingPaywayOrder', JSON.stringify({
@@ -2753,6 +2732,10 @@
         };
 
         const cancelPayment = () => {
+            // Backing out after a payment was created counts as a cancellation
+            if (currentTranId && pendingOrderData) {
+                recordCancellation(pendingOrderData.userInfo.phone);
+            }
             stopPaymentPolling();
             currentTranId = null;
             currentDeeplink = null;
@@ -2765,7 +2748,6 @@
         // Submit order after verified payment
         const submitOrder = async () => {
             if (!pendingOrderData) return;
-            const t = translations[currentLang];
             const data = pendingOrderData;
             const tranId = currentTranId;
 
@@ -2773,72 +2755,26 @@
             document.getElementById('loadingOverlay').classList.add('active');
 
             try {
-                const customerHistory = recordOrder(data.userInfo.phone);
-                const risk = getCustomerRisk(data.userInfo.phone);
+                const phone = data.userInfo.phone;
+                const history = getCustomerHistory(phone);
+                const paymentDisplay = formatKHR(data.totalPrice);
 
-                // Sanitize user-supplied text to prevent Markdown injection
-                const escapeMd = (str) => String(str || '').replace(/[*_`[\]]/g, '\\$&');
-                const safeName = escapeMd(data.userInfo.name);
-                const safePhone = escapeMd(data.userInfo.phone);
-                const safeAddress = escapeMd(data.userInfo.address);
-                const safeNote = escapeMd(data.userInfo.note);
-
-                const orderItems = data.cart.map(item => `• ${escapeMd(item.name)} x ${item.quantity} (${escapeMd(item.price)})`).join('\n');
-                const googleMapsLink = `https://www.google.com/maps?q=${encodeURIComponent(data.userInfo.lat)},${encodeURIComponent(data.userInfo.lng)}`;
-
-                let riskIndicator = '';
-                if (risk.level === 'high') riskIndicator = '🚨 ';
-                else if (risk.level === 'medium') riskIndicator = '⚠️ ';
-
-                const paymentDisplay = data.totalPrice.toLocaleString() + '៛';
-
-                // Order message to store owner
-                const message = `${riskIndicator}🛍️ *NEW ORDER*${isTelegramMiniApp ? ' (Mini App)' : ''} ✅ *PAID via ABA PayWay*\n\n` +
-                    `👤 *Customer:* ${safeName}\n` +
-                    `📞 *Phone:* ${safePhone}\n` +
-                    `${data.userInfo.telegramUsername ? '💬 *Telegram:* ' + escapeMd(data.userInfo.telegramUsername) + '\n' : ''}` +
-                    `${safeNote ? '📝 *Note:* ' + safeNote + '\n' : ''}` +
-                    `📍 *Location:* ${safeAddress}\n` +
-                    `🗺️ *Map:* [Open in Google Maps](${googleMapsLink})\n\n` +
-                    `💰 *Payment:* ${paymentDisplay}\n` +
-                    `🔐 *Tran ID:* ${tranId || 'N/A'}\n` +
-                    `💳 *Method:* ABA PayWay (Verified)\n\n` +
-                    `📊 *Customer History:*\n` +
-                    `   • Orders: ${customerHistory.orders}\n` +
-                    `   • Cancellations: ${customerHistory.cancellations}\n` +
-                    `${risk.warning ? '   • ' + escapeMd(risk.warning) + '\n' : ''}` +
-                    `\n📦 *Order Items:*\n${orderItems}\n\n` +
-                    `⏰ *Time:* ${new Date().toLocaleString()}`;
-
-                // Send to store owner via Worker (keeps bot token off the client)
-                const notifyPayload = { secret: NOTIFY_SECRET, message };
-                if (isTelegramMiniApp && tgApp.initDataUnsafe && tgApp.initDataUnsafe.user) {
-                    const userId = tgApp.initDataUnsafe.user.id;
-                    const receiptItems = data.cart.map(item => `  • ${escapeMd(item.name)} x${item.quantity} — ${escapeMd(item.price)}`).join('\n');
-                    notifyPayload.receipt = {
-                        chat_id: userId,
-                        text: `🧳 *Sambo Store — Invoice*\n────────────────────\n\n` +
-                            `👤 *Customer:* ${safeName}\n` +
-                            `📞 *Phone:* ${safePhone}\n` +
-                            `📍 *Address:* ${safeAddress}\n\n` +
-                            `📦 *${t.receiptItems || 'Order Items'}:*\n${receiptItems}\n\n` +
-                            `💰 *${t.receiptTotal || 'Total'}:* ${paymentDisplay}\n` +
-                            `✅ *Status:* Paid via ABA PayWay\n` +
-                            `🔐 *Tran ID:* ${tranId || 'N/A'}\n` +
-                            `📅 *Date:* ${new Date().toLocaleString()}\n\n` +
-                            `────────────────────\n` +
-                            `${t.receiptNote || 'Thank you for shopping with Sambo Store!'}`
-                    };
-                }
-
-                const telegramResponse = await fetch(`${PAYWAY_WORKER_URL}/api/notify`, {
+                // The Worker checks the payment with PayWay itself, then writes and sends the
+                // Telegram messages from the signed order — the page can't fake or alter them.
+                const orderResponse = await fetch(`${PAYWAY_WORKER_URL}/api/order`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(notifyPayload)
+                    body: JSON.stringify({
+                        order_token: data.orderToken,
+                        // Counts from this device, including this order
+                        history: { orders: history.orders + 1, cancellations: history.cancellations }
+                    })
                 });
 
-                const telegramResult = await telegramResponse.json();
-                if (!telegramResult.ok) throw new Error(telegramResult.error || 'Notification failed');
+                const orderResult = await orderResponse.json();
+                if (!orderResult.ok) throw new Error(orderResult.error || 'Order submission failed');
+
+                recordOrder(phone);
 
                 // Save to Google Sheets (if configured)
                 if (GOOGLE_SHEETS_URL) {
@@ -2871,7 +2807,6 @@
                 pendingOrderData = null;
                 currentTranId = null;
                 currentDeeplink = null;
-                checkoutStarted = false;
                 localStorage.removeItem('pendingPaywayOrder');
 
                 document.getElementById('loadingOverlay').classList.remove('active');
@@ -2884,7 +2819,8 @@
             } catch (error) {
                 document.getElementById('loadingOverlay').classList.remove('active');
                 console.error('Order error:', error);
-                alert(translations[currentLang].alertOrderFailed);
+                // The customer may already have paid, so give them the reference to quote
+                alert(translations[currentLang].alertOrderFailed + (tranId ? `\n\nTran ID: ${tranId}` : ''));
             }
         };
 
@@ -2992,7 +2928,7 @@
                     section.style.display = 'none';
                 }
                 // Show all cards within visible sections
-                section.querySelectorAll('.product-card').forEach(card => card.style.display = '');
+                section.querySelectorAll('.menu-card').forEach(card => card.style.display = '');
             });
 
             // Remove any previous no-results message
@@ -3012,7 +2948,7 @@
             }
 
             sections.forEach(section => {
-                const cards = section.querySelectorAll('.product-card');
+                const cards = section.querySelectorAll('.menu-card');
                 let sectionVisible = 0;
                 cards.forEach(card => {
                     const text = card.textContent.toLowerCase();
@@ -3025,15 +2961,15 @@
             });
 
             // Show/hide no-results message
-            const container = document.getElementById('productsContainer');
+            const container = document.getElementById('products-container');
             let noResults = container.querySelector('.no-results');
             if (q && totalVisible === 0) {
                 if (!noResults) {
                     noResults = document.createElement('div');
                     noResults.className = 'no-results';
-                    noResults.innerHTML = `<div class="no-results-icon">🔍</div><div>No products found for "<strong>${query.replace(/</g,'&lt;')}</strong>"</div><div style="margin-top:0.5rem;font-size:0.85rem;">Try a different keyword</div>`;
                     container.appendChild(noResults);
                 }
+                noResults.innerHTML = `<div class="no-results-icon">🔍</div><div>No products found for "<strong>${escapeHtml(query.trim())}</strong>"</div><div style="margin-top:0.5rem;font-size:0.85rem;">Try a different keyword</div>`;
             } else if (noResults) {
                 noResults.remove();
             }

@@ -6,8 +6,19 @@ compatibility_date = "2024-09-01"
 [vars]
 PAYWAY_BASE_URL = "https://checkout-sandbox.payway.com.kh"
 MERCHANT_ID = "ec475039"
+# Product sheet (Google Apps Script). The Worker reads prices from here, so it
+# must be the same URL as PRODUCTS_SHEETS_URL in index.html.
+PRODUCTS_URL = "https://script.google.com/macros/s/AKfycbwcRg8ovt2kGtubWqaaYtgUjPK7s4SzYdB2DI2kQIGKZ2hOZYkJvudq7CBC9U7QH6BD/exec"
 
 # For production:
 # 1. Change PAYWAY_BASE_URL to "https://checkout.payway.com.kh"
 # 2. Update MERCHANT_ID to production merchant ID
 # 3. Set API key as secret: npx wrangler secret put API_KEY
+#
+# REQUIRED SECRETS (set once via Wrangler, never stored in code):
+#   npx wrangler secret put API_KEY
+#   npx wrangler secret put TELEGRAM_BOT_TOKEN
+#   npx wrangler secret put TELEGRAM_CHAT_ID
+#
+# NOTIFY_SECRET is no longer used and can be removed:
+#   npx wrangler secret delete NOTIFY_SECRET
