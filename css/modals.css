@@ -1,0 +1,362 @@
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 2000;
+    justify-content: center;
+    align-items: flex-end;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 15px 15px 0 0;
+    padding: 1.5rem;
+    width: 100%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+.modal-content h2 {
+    margin: 0 0 1rem 0;
+    color: #e01a22;
+}
+
+.close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #e01a22;
+    cursor: pointer;
+}
+
+/* Sign Up Modal */
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 1rem;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #e01a22;
+    box-shadow: 0 0 0 3px rgba(224,26,34,0.1);
+}
+
+.form-group input.error {
+    border-color: #e53935;
+}
+
+.field-error {
+    color: #e53935;
+    font-size: 0.78rem;
+    margin-top: 0.25rem;
+    display: none;
+}
+
+.field-error.show {
+    display: block;
+}
+
+#signupMap {
+    width: 100%;
+    height: 300px;
+    border-radius: 10px;
+}
+
+.map-wrapper {
+    position: relative;
+    margin: 1rem 0;
+}
+
+.center-pin {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -100%);
+    z-index: 1000;
+    font-size: 2.2rem;
+    pointer-events: none;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+}
+
+.map-instruction {
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 0.5rem;
+}
+
+.btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 5px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 1rem;
+}
+
+.btn-primary {
+    background-color: #e01a22;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #c70219;
+}
+
+.btn-secondary {
+    background-color: #666;
+    color: white;
+    margin-top: 0.5rem;
+}
+
+/* Cart Modal */
+.cart-items {
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.cart-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    border-bottom: 1px solid #eee;
+}
+
+.cart-item-info {
+    flex: 1;
+}
+
+.cart-item-name {
+    font-weight: bold;
+}
+
+.cart-item-price {
+    color: #e01a22;
+    font-size: 0.9rem;
+}
+
+.cart-item-subtotal {
+    color: #333;
+    font-weight: bold;
+    font-size: 0.85rem;
+    margin-top: 2px;
+}
+
+/* Receipt Summary */
+.receipt-summary {
+    background: #f9f9f9;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-top: 1rem;
+    border: 1px dashed #ccc;
+}
+
+.receipt-line {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.3rem 0;
+    font-size: 0.95rem;
+}
+
+.receipt-total {
+    font-weight: bold;
+    font-size: 1.2rem;
+    border-top: 2px solid #333;
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    color: #e01a22;
+}
+
+.receipt-item-count {
+    text-align: center;
+    color: #666;
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+}
+
+.cart-buttons {
+    margin-top: 1rem;
+}
+
+.receipt-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin: 0.5rem 0;
+}
+
+.btn-outline {
+    flex: 1;
+    padding: 0.6rem;
+    background: white;
+    color: #333;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.btn-outline:hover {
+    background: #f5f5f5;
+}
+
+.cart-item-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.qty-btn {
+    background: #e01a22;
+    color: white;
+    border: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.qty-display {
+    font-weight: bold;
+    min-width: 30px;
+    text-align: center;
+}
+
+.qty-input {
+    margin: 0 0.2rem;
+    width: 50px;
+    text-align: center;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 14px;
+    padding: 2px;
+}
+
+.remove-item {
+    background: #ff4444;
+    color: white;
+    border: none;
+    padding: 0.25rem 0.5rem;
+    border-radius: 3px;
+    cursor: pointer;
+    margin-left: 0.5rem;
+}
+
+.cart-total {
+    font-size: 1.2rem;
+    font-weight: bold;
+    text-align: right;
+    padding: 1rem;
+    border-top: 2px solid #e01a22;
+    margin-top: 1rem;
+}
+
+.empty-cart {
+    text-align: center;
+    padding: 2rem;
+    color: #666;
+}
+
+/* User Info Display */
+.user-info-bar {
+    background: #fff3f3;
+    padding: 0.5rem 1rem;
+    display: none;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+}
+
+.user-info-bar.active {
+    display: flex;
+}
+
+.user-info-bar span {
+    color: #e01a22;
+    font-weight: bold;
+}
+
+.edit-profile-btn {
+    background: none;
+    border: 1px solid #e01a22;
+    color: #e01a22;
+    padding: 0.25rem 0.5rem;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+
+/* Loading Overlay */
+.loading-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.7);
+    z-index: 3000;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    color: white;
+}
+
+.loading-overlay.active {
+    display: flex;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid #fff;
+    border-top-color: #e01a22;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Success Message */
+.success-modal .modal-content {
+    text-align: center;
+}
+
+.success-icon {
+    font-size: 4rem;
+    color: #4CAF50;
+}

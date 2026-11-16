@@ -1,0 +1,127 @@
+/* Store Info Modal */
+.store-name-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+}
+
+.store-name-btn:hover {
+    opacity: 0.85;
+}
+
+.store-info-modal .modal-content {
+    border-radius: 15px 15px 0 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+.store-info-banner {
+    background: linear-gradient(135deg, #e01a22, #c70219);
+    color: white;
+    text-align: center;
+    padding: 2rem 1.5rem 1.5rem;
+}
+
+.store-info-banner h2 {
+    margin: 0;
+    font-size: 1.8rem;
+}
+
+.store-info-banner p {
+    margin: 0.5rem 0 0;
+    opacity: 0.9;
+    font-size: 0.95rem;
+}
+
+.store-info-body {
+    padding: 1.25rem;
+}
+
+.store-info-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.85rem 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.store-info-item:last-child {
+    border-bottom: none;
+}
+
+.store-info-icon {
+    font-size: 1.4rem;
+    min-width: 30px;
+    text-align: center;
+}
+
+.store-info-detail {
+    flex: 1;
+}
+
+.store-info-detail strong {
+    display: block;
+    color: #333;
+    margin-bottom: 0.2rem;
+    font-size: 0.95rem;
+}
+
+.store-info-detail span,
+.store-info-detail a {
+    color: #666;
+    font-size: 0.9rem;
+    text-decoration: none;
+}
+
+.store-info-detail a {
+    color: #e01a22;
+}
+
+.store-info-detail a:hover {
+    text-decoration: underline;
+}
+
+#storeInfoMap {
+    width: 100%;
+    height: 200px;
+    border-radius: 10px;
+    margin-top: 0.75rem;
+}
+
+.store-info-social {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    justify-content: center;
+}
+
+.social-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.6rem 1.2rem;
+    border-radius: 25px;
+    border: none;
+    font-size: 0.9rem;
+    font-weight: bold;
+    cursor: pointer;
+    text-decoration: none;
+    color: white;
+}
+
+.social-btn.facebook {
+    background: #1877F2;
+}
+
+.social-btn.telegram {
+    background: #0088cc;
+}
+
+.social-btn:hover {
+    opacity: 0.9;
+}

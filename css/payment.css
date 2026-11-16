@@ -1,0 +1,208 @@
+/* Payment Modal */
+.payment-modal .modal-content {
+    border-radius: 15px 15px 0 0;
+    padding: 0;
+    overflow: hidden;
+    max-height: 95vh;
+}
+
+.payment-header {
+    background: linear-gradient(135deg, #005b96, #003f6b);
+    color: white;
+    text-align: center;
+    padding: 1.25rem;
+}
+
+.payment-header h2 {
+    margin: 0;
+    font-size: 1.3rem;
+}
+
+.payment-header p {
+    margin: 0.3rem 0 0;
+    opacity: 0.85;
+    font-size: 0.85rem;
+}
+
+.payment-body {
+    padding: 1.25rem;
+    text-align: center;
+}
+
+.payment-amount {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #e01a22;
+    margin: 0.5rem 0;
+}
+
+.payment-currency-toggle {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.currency-btn {
+    padding: 0.5rem 1.5rem;
+    border: 2px solid #005b96;
+    background: white;
+    color: #005b96;
+    border-radius: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.currency-btn.active {
+    background: #005b96;
+    color: white;
+}
+
+.qr-container {
+    background: white;
+    border: 2px solid #eee;
+    border-radius: 15px;
+    padding: 1rem;
+    display: inline-block;
+    margin: 0.75rem 0;
+}
+
+#khqrCode {
+    display: flex;
+    justify-content: center;
+}
+
+#khqrCode canvas, #khqrCode img {
+    max-width: 220px !important;
+    max-height: 220px !important;
+}
+
+.payment-instruction {
+    font-size: 0.85rem;
+    color: #666;
+    margin: 0.75rem 0;
+    line-height: 1.5;
+}
+
+.payment-timer {
+    font-size: 0.9rem;
+    color: #e01a22;
+    font-weight: bold;
+    margin: 0.5rem 0;
+}
+
+.payment-merchant {
+    font-size: 0.8rem;
+    color: #888;
+    margin-bottom: 0.75rem;
+}
+
+.payment-buttons {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.payment-buttons .btn {
+    flex: 1;
+    margin-top: 0;
+}
+
+.btn-success {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.btn-success:hover {
+    background-color: #43a047;
+}
+
+.btn-danger {
+    background-color: #f44336;
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #e53935;
+}
+
+.payment-steps {
+    text-align: left;
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1rem;
+    margin: 0.75rem 0;
+}
+
+.payment-steps ol {
+    margin: 0;
+    padding-left: 1.2rem;
+}
+
+.payment-steps li {
+    font-size: 0.85rem;
+    color: #555;
+    margin-bottom: 0.4rem;
+}
+
+.payment-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin: 0.75rem 0;
+    font-size: 0.9rem;
+    color: #555;
+}
+
+.status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #ffa000;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+.status-dot.confirmed {
+    background: #4CAF50;
+    animation: none;
+}
+
+.status-dot.failed {
+    background: #e53935;
+    animation: none;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.8); }
+}
+
+.payment-loading {
+    padding: 2rem 0;
+    text-align: center;
+}
+
+.payment-loading .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #eee;
+    border-top-color: #005b96;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 1rem;
+}
+
+.payway-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: #f0f7ff;
+    border: 1px solid #c5ddf5;
+    border-radius: 5px;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.75rem;
+    color: #005b96;
+    margin-top: 0.5rem;
+}
