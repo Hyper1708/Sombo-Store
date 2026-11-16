@@ -34,6 +34,8 @@ js/                     Plain scripts, loaded in this order from index.html
   app.js                Start-up
 images/products/        Product photos (file names come from the sheet)
 payway-worker/          Cloudflare Worker: pricing, PayWay, Telegram
+scripts/
+  version-assets.mjs    Adds ?v=<hash> to the CSS/JS links in index.html
 ```
 
 There is no build step. The scripts share the page's global scope, so the order of the
@@ -83,6 +85,20 @@ python -m http.server 8000
 
 The deployed Worker accepts requests from `localhost`, so checkout works against the
 PayWay sandbox while testing locally.
+
+## Releasing changes
+
+GitHub Pages publishes whatever is on `main`. Browsers may reuse cached CSS/JS files for
+about 10 minutes, so each link in `index.html` carries a version based on the file's
+content (`js/cart.js?v=3f9c2a1b`). After editing anything in `css/` or `js/`, update the
+versions before committing:
+
+```bash
+node scripts/version-assets.mjs
+```
+
+It only changes the links of files whose content changed, and does nothing if all are
+current.
 
 ## Worker setup
 
