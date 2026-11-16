@@ -22,6 +22,7 @@ const translations = {
         cancel: 'Cancel',
         itemNoteLabel: 'Note for us (optional)',
         itemNotePlaceholder: 'e.g. colors, sizes, packing',
+        itemNotFound: 'Sorry, this item is no longer available',
 
         // Sign Up Modal
         yourInfo: '📝 Your Information',
@@ -118,6 +119,7 @@ const translations = {
         cancel: 'បោះបង់',
         itemNoteLabel: 'កំណត់ចំណាំសម្រាប់ក្រុមការងារ',
         itemNotePlaceholder: 'ឧ. ពណ៌ ទំហំ ការវេចខ្ចប់',
+        itemNotFound: 'សូមអភ័យទោស ទំនិញនេះលែងមានហើយ',
 
         // Sign Up Modal
         yourInfo: '📝 ព័ត៌មានរបស់អ្នក',

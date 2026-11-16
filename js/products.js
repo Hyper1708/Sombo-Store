@@ -33,6 +33,7 @@ const loadProductsFromSheet = async () => {
         renderProducts(allProducts);
         updateCategoryButtons();
         applyTranslations();
+        openLinkedProduct();
     } catch (error) {
         console.error('Error loading products:', error);
         document.getElementById('products-container').innerHTML = `
@@ -150,12 +151,48 @@ const openProductModal = (index) => {
     document.getElementById('modalNote').value = '';
 
     document.getElementById('productModal').classList.add('active');
+    setItemInUrl(product.id);
 };
 
 const closeProductModal = () => {
     document.getElementById('productModal').classList.remove('active');
     stopGalleryAutoplay();
     currentProductIndex = -1;
+    setItemInUrl(null);
+};
+
+// Product links: ?item=128 opens product 128, and the address bar always points at the
+// open product so it can be copied and shared. Telegram Mini App links pass the same
+// thing as startapp=item_128.
+const itemIdFromStartParam = (startParam) => {
+    const match = typeof startParam === 'string' && startParam.match(/^item_([\w-]+)$/);
+    return match ? match[1] : '';
+};
+
+const getLinkedItemId = () => {
+    const fromUrl = new URLSearchParams(window.location.search).get('item');
+    if (fromUrl) return fromUrl.trim();
+    return isTelegramMiniApp ? itemIdFromStartParam(tgApp.initDataUnsafe && tgApp.initDataUnsafe.start_param) : '';
+};
+
+const setItemInUrl = (id) => {
+    const url = new URL(window.location.href);
+    const value = id == null ? '' : String(id).trim();
+    if (value) url.searchParams.set('item', value);
+    else url.searchParams.delete('item');
+    if (url.href !== window.location.href) window.history.replaceState(null, '', url);
+};
+
+const openLinkedProduct = () => {
+    const id = getLinkedItemId();
+    if (!id) return;
+    const index = allProducts.findIndex(p => String(p.id ?? '').trim() === id);
+    if (index === -1) {
+        setItemInUrl(null);
+        showToast(translations[currentLang].itemNotFound, 3500);
+        return;
+    }
+    openProductModal(index);
 };
 
 const addToCartFromModal = () => {
