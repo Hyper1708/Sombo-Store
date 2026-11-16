@@ -237,6 +237,29 @@
     gap: 0.5rem;
 }
 
+.product-modal-note label {
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.product-modal-note textarea {
+    width: 100%;
+    min-height: 60px;
+    box-sizing: border-box;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font: inherit;
+    font-size: 1rem; /* 16px keeps iPhones from zooming in on focus */
+    resize: vertical;
+}
+
+.product-modal-note textarea:focus {
+    outline: none;
+    border-color: #e01a22;
+}
+
 .product-modal-btn:disabled {
     background: #ccc;
     cursor: not-allowed;

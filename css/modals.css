@@ -158,6 +158,13 @@
     font-weight: bold;
 }
 
+.cart-item-note {
+    color: #666;
+    font-size: 0.8rem;
+    margin: 2px 0;
+    overflow-wrap: anywhere;
+}
+
 .cart-item-price {
     color: #e01a22;
     font-size: 0.9rem;

@@ -145,8 +145,9 @@ const openProductModal = (index) => {
         document.getElementById('productModalAddBtn').disabled = true;
     }
 
-    // Reset quantity to 1 when opening modal
+    // Start each product with quantity 1 and an empty note
     document.getElementById('modalQuantity').value = 1;
+    document.getElementById('modalNote').value = '';
 
     document.getElementById('productModal').classList.add('active');
 };
@@ -163,7 +164,8 @@ const addToCartFromModal = () => {
     if (!product) return;
 
     const quantity = Math.min(Math.max(parseInt(document.getElementById('modalQuantity').value) || 1, 1), 999);
-    addToCart(product, quantity);
+    const note = document.getElementById('modalNote').value.replace(/\s+/g, ' ').trim().slice(0, 200);
+    addToCart(product, quantity, note);
 
     closeProductModal();
 };

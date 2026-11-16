@@ -41,7 +41,7 @@ const printReceipt = () => {
         totalPrice += itemTotal;
         receiptHTML += `
             <div class="item">
-                <span class="item-name">${escapeHtml(item.name)}</span>
+                <span class="item-name">${escapeHtml(item.name)}${item.note ? `<br><small>📝 ${escapeHtml(item.note)}</small>` : ''}</span>
                 <span class="item-qty">x${item.quantity}</span>
                 <span class="item-price">${formatKHR(itemTotal)}</span>
             </div>
@@ -85,7 +85,9 @@ const downloadReceipt = () => {
         const itemTotal = priceNum * item.quantity;
         totalPrice += itemTotal;
         totalItems += item.quantity;
-        lines.push(item.name, `  ${item.quantity} x ${formatKHR(priceNum)} = ${formatKHR(itemTotal)}`);
+        lines.push(item.name);
+        if (item.note) lines.push(`  Note: ${item.note}`);
+        lines.push(`  ${item.quantity} x ${formatKHR(priceNum)} = ${formatKHR(itemTotal)}`);
     });
 
     lines.push(dash, `TOTAL ITEMS: ${totalItems}`, `TOTAL: ${formatKHR(totalPrice)}`, rule,

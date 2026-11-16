@@ -40,7 +40,7 @@ const placeOrder = async () => {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                items: cart.map(item => ({ id: item.id || '', name: item.name, quantity: item.quantity })),
+                items: cart.map(item => ({ id: item.id || '', name: item.name, quantity: item.quantity, note: item.note || '' })),
                 customer: {
                     name: userInfo.name,
                     phone: userInfo.phone,

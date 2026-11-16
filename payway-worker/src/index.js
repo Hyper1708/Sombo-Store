@@ -286,7 +286,9 @@ async function priceCart(rawItems, env) {
     if (!Number.isFinite(price) || price <= 0) return { error: `No price set for: ${label}` };
 
     const quantity = clampInt(raw?.quantity, 1, 999);
-    items.push({ name: label, quantity, price });
+    // Customer's note for this line (colors, sizes, packing...), shown to the store owner
+    const note = sanitizeText(String(raw?.note ?? '').replace(/\s+/g, ' '), 200);
+    items.push(note ? { name: label, quantity, price, note } : { name: label, quantity, price });
   }
 
   const amount = validateAmount(items.reduce((sum, i) => sum + i.price * i.quantity, 0));
@@ -313,7 +315,9 @@ async function createPayment(body, env) {
 
   const req_time     = utcNow();
   const tran_id      = 'SS' + Date.now().toString().slice(-10);
-  const encodedItems = safeBase64(JSON.stringify(items));
+  // PayWay only gets name, quantity and price; notes stay in the signed order
+  const paywayItems  = items.map(({ name, quantity, price }) => ({ name, quantity, price }));
+  const encodedItems = safeBase64(JSON.stringify(paywayItems));
   const returnPage   = site_url
     ? btoa(site_url + (site_url.includes('?') ? '&' : '?') + 'payway_tran=' + tran_id)
     : '';
@@ -484,7 +488,8 @@ async function submitOrder(body, env) {
   const c = order.customer;
   const total = formatKHR(order.amount);
   const itemLines = order.items
-    .map(i => `• ${escapeMd(i.name)} x ${i.quantity} (${formatKHR(i.price)})`)
+    .map(i => `• ${escapeMd(i.name)} x ${i.quantity} (${formatKHR(i.price)})` +
+      (i.note ? `\n   📝 ${escapeMd(i.note)}` : ''))
     .join('\n');
   const mapLine = c.lat !== null && c.lng !== null
     ? `🗺️ *Map:* [Open in Google Maps](https://www.google.com/maps?q=${c.lat},${c.lng})\n`
@@ -518,7 +523,8 @@ async function submitOrder(body, env) {
   if (order.tg?.id) {
     const r = RECEIPT_TEXT[order.lang] || RECEIPT_TEXT.en;
     const receiptItems = order.items
-      .map(i => `  • ${escapeMd(i.name)} x${i.quantity} — ${formatKHR(i.price)}`)
+      .map(i => `  • ${escapeMd(i.name)} x${i.quantity} — ${formatKHR(i.price)}` +
+        (i.note ? `\n     📝 ${escapeMd(i.note)}` : ''))
       .join('\n');
     const receipt =
       `🧳 *Sambo Store — Invoice*\n────────────────────\n\n` +

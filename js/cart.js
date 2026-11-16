@@ -2,11 +2,13 @@
 
 let cart = JSON.parse(localStorage.getItem('cart')) || [];
 
-const addToCart = (product, quantity = 1) => {
+const addToCart = (product, quantity = 1, note = '') => {
     const id = String(product.id ?? '').trim();
     const name = String(product.name || '');
     // Carts saved before ids were stored only have a name to match on
-    const existingItem = cart.find(item => (id && item.id) ? item.id === id : item.name === name);
+    const sameProduct = (item) => (id && item.id) ? item.id === id : item.name === name;
+    // The same product with a different note gets its own cart line
+    const existingItem = cart.find(item => sameProduct(item) && (item.note || '') === note);
 
     if (existingItem) {
         existingItem.quantity = Math.min(existingItem.quantity + quantity, 999);
@@ -14,7 +16,7 @@ const addToCart = (product, quantity = 1) => {
         existingItem.price = parsePrice(product.pricess);
     } else {
         // The Worker re-prices every line from the sheet; price here is for display only
-        cart.push({ id, name, price: parsePrice(product.pricess), quantity });
+        cart.push({ id, name, price: parsePrice(product.pricess), quantity, note });
     }
 
     localStorage.setItem('cart', JSON.stringify(cart));
@@ -76,6 +78,7 @@ const renderCart = () => {
             <div class="cart-item">
                 <div class="cart-item-info">
                     <div class="cart-item-name">${escapeHtml(item.name)}</div>
+                    ${item.note ? `<div class="cart-item-note">📝 ${escapeHtml(item.note)}</div>` : ''}
                     <div class="cart-item-price">${formatKHR(priceNum)} x ${item.quantity}</div>
                     <div class="cart-item-subtotal">= ${formatKHR(itemTotal)}</div>
                 </div>

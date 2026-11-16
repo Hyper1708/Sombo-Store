@@ -20,6 +20,8 @@ const translations = {
         outOfStock: 'Out of Stock',
         addToCart: 'Add to Cart',
         cancel: 'Cancel',
+        itemNoteLabel: 'Note for us (optional)',
+        itemNotePlaceholder: 'e.g. colors, sizes, packing',
 
         // Sign Up Modal
         yourInfo: '📝 Your Information',
@@ -114,6 +116,8 @@ const translations = {
         outOfStock: 'អស់ស្តុក',
         addToCart: 'ដាក់ក្នុងកន្ត្រក',
         cancel: 'បោះបង់',
+        itemNoteLabel: 'កំណត់ចំណាំសម្រាប់យើង (ស្រេចចិត្ត)',
+        itemNotePlaceholder: 'ឧ. ពណ៌ ទំហំ ការវេចខ្ចប់',
 
         // Sign Up Modal
         yourInfo: '📝 ព័ត៌មានរបស់អ្នក',
