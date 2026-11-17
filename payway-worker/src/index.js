@@ -10,14 +10,26 @@
  * Prices and the owner's Telegram message are built here. Nothing the browser says about
  * prices, totals or payment status is trusted.
  *
+ * Listing bot (see src/listings/):
+ * POST /api/telegram        → Telegram sends staff-group messages and button presses here
+ * POST /api/telegram/setup  → One-time: point the bot's webhook at this Worker
+ * GET  /photos/<key>        → Product photos stored in R2
+ *
  * Secrets (set via: npx wrangler secret put <NAME>):
- *   API_KEY            — ABA PayWay API key (also signs order tokens)
- *   TELEGRAM_BOT_TOKEN — Telegram bot token (also verifies Mini App users)
- *   TELEGRAM_CHAT_ID   — Store owner Telegram chat ID
+ *   API_KEY                 — ABA PayWay API key (also signs order tokens)
+ *   TELEGRAM_BOT_TOKEN      — Telegram bot token (also verifies Mini App users)
+ *   TELEGRAM_CHAT_ID        — Store owner Telegram chat ID
+ *   TELEGRAM_WEBHOOK_SECRET — Proves webhook calls really come from Telegram
+ *   SHEET_WRITE_SECRET      — Shared with the Google Apps Script that adds product rows
  *
  * Vars in wrangler.toml (non-sensitive):
- *   MERCHANT_ID, PAYWAY_BASE_URL, PRODUCTS_URL, ALLOWED_ORIGIN (optional)
+ *   MERCHANT_ID, PAYWAY_BASE_URL, PRODUCTS_URL, ALLOWED_ORIGIN (optional),
+ *   SITE_URL, PUBLIC_URL, STAFF_CHAT_ID, CHANNEL_CHAT_ID
  */
+
+import { telegram } from './listings/telegram.js';
+
+export { ListingDesk } from './listings/desk.js';
 
 const ENDPOINTS = {
   PURCHASE: '/api/payment-gateway/v1/payments/purchase',
@@ -546,6 +558,77 @@ async function submitOrder(body, env) {
   return { ok: true, tran_id: order.tran_id };
 }
 
+// ===== LISTING BOT ENDPOINTS =====
+
+/** Constant-time comparison for secrets. */
+async function sameSecret(a, b) {
+  const key = await crypto.subtle.importKey(
+    'raw', crypto.getRandomValues(new Uint8Array(32)), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+  );
+  const [x, y] = await Promise.all([a, b].map(s => crypto.subtle.sign('HMAC', key, enc.encode(String(s)))));
+  const ua = new Uint8Array(x);
+  const ub = new Uint8Array(y);
+  let diff = 0;
+  for (let i = 0; i < ua.length; i++) diff |= ua[i] ^ ub[i];
+  return diff === 0;
+}
+
+/** Telegram delivers staff-group messages and button presses here. */
+async function handleTelegramUpdate(request, raw, env) {
+  const expected = env?.TELEGRAM_WEBHOOK_SECRET;
+  const given = request.headers.get('X-Telegram-Bot-Api-Secret-Token') || '';
+  if (!expected || !(await sameSecret(given, expected))) {
+    return new Response('Forbidden', { status: 403 });
+  }
+  if (env.LISTINGS) {
+    try {
+      const desk = env.LISTINGS.get(env.LISTINGS.idFromName('staff'));
+      await desk.fetch('https://listing-desk/update', { method: 'POST', body: raw });
+    } catch (err) {
+      console.error('listing desk unreachable:', err.message);
+    }
+  }
+  // Always 200: anything else makes Telegram resend the same update again and again
+  return new Response('ok');
+}
+
+/** One-time setup: tell Telegram to send the bot's updates to this Worker. */
+async function setupTelegramWebhook(body, env, url) {
+  const secret = env?.TELEGRAM_WEBHOOK_SECRET;
+  if (!secret || !(await sameSecret(String(body.secret || ''), secret))) {
+    return { ok: false, error: 'Unauthorized' };
+  }
+  await telegram(env, 'setWebhook', {
+    url: `${url.origin}/api/telegram`,
+    secret_token: secret,
+    allowed_updates: ['message', 'edited_message', 'callback_query', 'channel_post'],
+    drop_pending_updates: true
+  });
+  const info = await telegram(env, 'getWebhookInfo');
+  return {
+    ok: true,
+    webhook: { url: info.url, pending_update_count: info.pending_update_count, last_error_message: info.last_error_message || null }
+  };
+}
+
+/** Product photos uploaded by the listing bot, stored in R2. */
+async function servePhoto(key, env, method) {
+  if (!/^products\/[a-z0-9]+-\d{1,2}\.jpg$/.test(key) || !env?.PHOTOS) {
+    return new Response('Not found', { status: 404 });
+  }
+  const object = await env.PHOTOS.get(key);
+  if (!object) return new Response('Not found', { status: 404 });
+  return new Response(method === 'HEAD' ? null : object.body, {
+    headers: {
+      'Content-Type': object.httpMetadata?.contentType || 'image/jpeg',
+      // Each photo has its own name and never changes
+      'Cache-Control': 'public, max-age=31536000, immutable',
+      'ETag': object.httpEtag || '',
+      'X-Content-Type-Options': 'nosniff'
+    }
+  });
+}
+
 // ===== MAIN HANDLER =====
 export default {
   async fetch(request, env) {
@@ -555,6 +638,11 @@ export default {
     // Handle CORS preflight
     if (request.method === 'OPTIONS') {
       return new Response(null, { headers: cors });
+    }
+
+    if (request.method === 'GET' || request.method === 'HEAD') {
+      const { pathname } = new URL(request.url);
+      if (pathname.startsWith('/photos/')) return servePhoto(pathname.slice('/photos/'.length), env, request.method);
     }
 
     if (request.method !== 'POST') {
@@ -594,6 +682,12 @@ export default {
       }
       if (url.pathname === '/api/order') {
         return jsonResponse(await submitOrder(body, env), 200, cors);
+      }
+      if (url.pathname === '/api/telegram') {
+        return await handleTelegramUpdate(request, raw, env);
+      }
+      if (url.pathname === '/api/telegram/setup') {
+        return jsonResponse(await setupTelegramWebhook(body, env, url), 200, cors);
       }
     } catch (err) {
       // Don't leak internal error details to the client

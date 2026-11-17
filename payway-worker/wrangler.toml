@@ -7,8 +7,30 @@ compatibility_date = "2024-09-01"
 PAYWAY_BASE_URL = "https://checkout-sandbox.payway.com.kh"
 MERCHANT_ID = "ec475039"
 # Product sheet (Google Apps Script). The Worker reads prices from here, so it
-# must be the same URL as PRODUCTS_SHEETS_URL in index.html.
+# must be the same URL as PRODUCTS_SHEETS_URL in js/config.js. The listing bot
+# also adds new product rows through the same script (see google-apps-script/).
 PRODUCTS_URL = "https://script.google.com/macros/s/AKfycbwcRg8ovt2kGtubWqaaYtgUjPK7s4SzYdB2DI2kQIGKZ2hOZYkJvudq7CBC9U7QH6BD/exec"
+
+# Listing bot
+SITE_URL = "https://hyper1708.github.io/Sombo-Store/"
+PUBLIC_URL = "https://sambo-store-pay.sambo-store.workers.dev"
+# Send /chatid in the staff group and in the sales channel, then paste the ids here
+STAFF_CHAT_ID = ""
+CHANNEL_CHAT_ID = ""
+
+# Product photos added by the listing bot
+[[r2_buckets]]
+binding = "PHOTOS"
+bucket_name = "sambo-product-photos"
+
+# The listing desk keeps albums, drafts and fixes in progress
+[[durable_objects.bindings]]
+name = "LISTINGS"
+class_name = "ListingDesk"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["ListingDesk"]
 
 # For production:
 # 1. Change PAYWAY_BASE_URL to "https://checkout.payway.com.kh"
@@ -19,6 +41,8 @@ PRODUCTS_URL = "https://script.google.com/macros/s/AKfycbwcRg8ovt2kGtubWqaaYtgUj
 #   npx wrangler secret put API_KEY
 #   npx wrangler secret put TELEGRAM_BOT_TOKEN
 #   npx wrangler secret put TELEGRAM_CHAT_ID
+#   npx wrangler secret put TELEGRAM_WEBHOOK_SECRET
+#   npx wrangler secret put SHEET_WRITE_SECRET
 #
 # NOTIFY_SECRET is no longer used and can be removed:
 #   npx wrangler secret delete NOTIFY_SECRET

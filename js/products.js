@@ -3,10 +3,13 @@
 let allProducts = [];
 let categories = new Set();
 
-// The sheet may hold a full path; only the file name matters
+// Photos added by the listing bot are full https links (stored in R2).
+// Older rows hold a file name, sometimes with a folder; only the name matters.
 const fixImagePath = (path) => {
-    if (!path) return '';
-    const filename = path.trim().split(/[\\\/]/).pop();
+    const value = String(path ?? '').trim();
+    if (!value) return '';
+    if (/^https:\/\//i.test(value)) return value;
+    const filename = value.split(/[\\\/]/).pop();
     return `${PRODUCT_IMAGES_DIR}/${filename}`;
 };
 
