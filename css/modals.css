@@ -234,6 +234,44 @@
     background: #f5f5f5;
 }
 
+/* Receipt picture preview (above the cart) */
+.receipt-preview-modal {
+    z-index: 3500;
+}
+
+.receipt-preview-modal .modal-content {
+    text-align: center;
+    background: #f5f5f5;
+}
+
+.receipt-preview-image {
+    display: block;
+    width: 100%;
+    max-width: 420px;
+    margin: 1.5rem auto 0.75rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+}
+
+.receipt-preview-hint {
+    color: #666;
+    font-size: 0.8rem;
+    margin: 0 0 0.75rem;
+}
+
+.receipt-preview-buttons {
+    display: flex;
+    gap: 0.5rem;
+    max-width: 420px;
+    margin: 0 auto;
+}
+
+.receipt-preview-buttons .btn {
+    flex: 1;
+    text-decoration: none;
+    text-align: center;
+}
+
 .cart-item-controls {
     display: flex;
     align-items: center;

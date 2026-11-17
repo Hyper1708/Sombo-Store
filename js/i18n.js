@@ -77,6 +77,20 @@ const translations = {
         receiptItems: 'Order Items',
         receiptTotal: 'Total',
         receiptNote: 'We will deliver your order soon. Thank you for shopping with Sambo Store!',
+        receiptTitle: 'Receipt',
+        receiptDate: 'Date',
+        receiptCustomer: 'Customer',
+        receiptPhone: 'Phone',
+        receiptItem: 'Item',
+        receiptQty: 'Qty',
+        receiptUnitPrice: 'Unit price',
+        receiptAmount: 'Amount',
+        receiptQuantity: 'Total quantity',
+        receiptThanks: 'Thank you for shopping with Sambo Store!',
+        receiptPreparing: 'Preparing your receipt...',
+        receiptSaveImage: '💾 Save picture',
+        receiptShare: '📤 Share',
+        receiptHoldToSave: 'On a phone, you can also press and hold the picture to save it.',
 
         // Loading
         sendingOrder: 'Sending order...',
@@ -195,7 +209,21 @@ const translations = {
         receiptIntro: 'សូមអរគុណសម្រាប់ការបញ្ជាទិញរបស់អ្នក!',
         receiptItems: 'មុខទំនិញដែលបានបញ្ជាទិញ',
         receiptTotal: 'សរុប',
-        receiptNote: 'យើងនឹងដឹកជញ្ជូនការបញ្ជាទិញរបស់អ្នកឆាប់ៗ។ សូមអរគុណដែលបានទិញជាមួយ Sambo Store!'
+        receiptNote: 'យើងនឹងដឹកជញ្ជូនការបញ្ជាទិញរបស់អ្នកឆាប់ៗ។ សូមអរគុណដែលបានទិញជាមួយ Sambo Store!',
+        receiptTitle: 'វិក្កយបត្រ',
+        receiptDate: 'កាលបរិច្ឆេទ',
+        receiptCustomer: 'អតិថិជន',
+        receiptPhone: 'ទូរស័ព្ទ',
+        receiptItem: 'មុខទំនិញ',
+        receiptQty: 'ចំនួន',
+        receiptUnitPrice: 'តម្លៃឯកតា',
+        receiptAmount: 'ទឹកប្រាក់',
+        receiptQuantity: 'ចំនួនសរុប',
+        receiptThanks: 'សូមអរគុណដែលបានទិញទំនិញជាមួយ Sambo Store!',
+        receiptPreparing: 'កំពុងរៀបចំវិក្កយបត្រ...',
+        receiptSaveImage: '💾 រក្សាទុករូបភាព',
+        receiptShare: '📤 ចែករំលែក',
+        receiptHoldToSave: 'នៅលើទូរស័ព្ទ អ្នកក៏អាចចុចសង្កត់លើរូបភាព ដើម្បីរក្សាទុកបានដែរ។'
     }
 };
 
