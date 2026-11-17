@@ -18,7 +18,7 @@ PUBLIC_URL = "https://sambo-store-pay.sambo-store.workers.dev"
 # If Telegram upgrades the staff group to a supergroup, the bot follows it to its new id
 # by itself; putting the new id here too keeps things tidy.
 STAFF_CHAT_ID = "-5439675869"
-CHANNEL_CHAT_ID = ""
+CHANNEL_CHAT_ID = "-1003236240367"
 
 # Product photos added by the listing bot are saved in Google Drive by the sheet's
 # Apps Script. To store them in Cloudflare R2 instead: enable R2 in the dashboard, run
