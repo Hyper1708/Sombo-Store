@@ -14,8 +14,10 @@ PRODUCTS_URL = "https://script.google.com/macros/s/AKfycbwcRg8ovt2kGtubWqaaYtgUj
 # Listing bot
 SITE_URL = "https://hyper1708.github.io/Sombo-Store/"
 PUBLIC_URL = "https://sambo-store-pay.sambo-store.workers.dev"
-# Send /chatid in the staff group and in the sales channel, then paste the ids here
-STAFF_CHAT_ID = ""
+# Send /chatid in the staff group and in the sales channel, then paste the ids here.
+# If Telegram upgrades the staff group to a supergroup, the bot follows it to its new id
+# by itself; putting the new id here too keeps things tidy.
+STAFF_CHAT_ID = "-5439675869"
 CHANNEL_CHAT_ID = ""
 
 # Product photos added by the listing bot are saved in Google Drive by the sheet's

@@ -68,12 +68,38 @@ export class ListingDesk {
       return this.tg('sendMessage', { chat_id: msg.chat.id, text: `Chat ID: <code>${msg.chat.id}</code>`, parse_mode: 'HTML' });
     }
 
-    const staffChat = String(this.env.STAFF_CHAT_ID || '');
+    const staffChat = await this.staffChatId();
+    if (await this.followUpgrade(msg, staffChat)) return;
     if (!staffChat || String(msg.chat.id) !== staffChat) return;
 
     if (update.edited_message) return this.onEdit(msg);
     if (msg.photo) return this.onPhoto(msg);
     if (msg.text && msg.reply_to_message) return this.onReply(msg);
+  }
+
+  /**
+   * The staff group from wrangler.toml, or its new id after Telegram upgraded it.
+   * The upgrade is only followed while STAFF_CHAT_ID still names the old group.
+   */
+  async staffChatId() {
+    const configured = String(this.env.STAFF_CHAT_ID || '');
+    const upgrade = await this.storage.get('staffChatUpgrade');
+    return upgrade && upgrade.from === configured ? upgrade.to : configured;
+  }
+
+  /**
+   * Telegram turns a basic group into a supergroup (with a new chat id) when some settings
+   * change. It announces this in both chats; remember the new id so the bot keeps working.
+   */
+  async followUpgrade(msg, staffChat) {
+    const configured = String(this.env.STAFF_CHAT_ID || '');
+    let to = null;
+    if (msg.migrate_to_chat_id && String(msg.chat.id) === staffChat) to = String(msg.migrate_to_chat_id);
+    if (msg.migrate_from_chat_id && String(msg.migrate_from_chat_id) === staffChat) to = String(msg.chat.id);
+    if (!to || !configured) return false;
+    await this.storage.put('staffChatUpgrade', { from: configured, to });
+    console.log(`staff group upgraded: ${staffChat} → ${to} (update STAFF_CHAT_ID in wrangler.toml)`);
+    return true;
   }
 
   async onPhoto(msg) {
