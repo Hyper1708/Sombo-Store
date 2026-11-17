@@ -25,8 +25,10 @@ var PHOTO_FOLDER_NAME = 'Sambo product photos';
 function doPost(e) {
   try {
     var body = JSON.parse(e.postData.contents);
-    var secret = PropertiesService.getScriptProperties().getProperty('SHEET_WRITE_SECRET');
-    if (!secret || body.secret !== secret) return json_({ ok: false, error: 'unauthorized' });
+    // Spaces around the password (easy to paste by accident) don't count
+    var secret = String(PropertiesService.getScriptProperties().getProperty('SHEET_WRITE_SECRET') || '').trim();
+    if (!secret) return json_({ ok: false, error: 'unauthorized: SHEET_WRITE_SECRET is not set in Script properties' });
+    if (String(body.secret || '').trim() !== secret) return json_({ ok: false, error: 'unauthorized: password does not match' });
     if (body.action !== 'addProduct' || !body.product) return json_({ ok: false, error: 'unknown action' });
 
     var product = body.product;
@@ -81,20 +83,48 @@ function addProduct_(product) {
   var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0]
     .map(function (h) { return String(h).trim().toLowerCase(); });
   var idColumn = headers.indexOf('id');
+  var nameColumn = headers.indexOf('name');
   if (idColumn === -1) throw new Error('no "id" column in the header row');
+  if (nameColumn === -1) throw new Error('no "name" column in the header row');
 
-  // New id = highest existing id + 1
   var lastRow = sheet.getLastRow();
-  var ids = lastRow > 1 ? sheet.getRange(2, idColumn + 1, lastRow - 1, 1).getValues() : [];
-  var maxId = ids.reduce(function (max, row) { return Math.max(max, Number(row[0]) || 0); }, 0);
-  var id = maxId + 1;
+  var rows = lastRow > 1 ? sheet.getRange(2, 1, lastRow - 1, headers.length).getValues() : [];
 
-  product.id = id;
-  var row = headers.map(function (h) {
+  // The id column may be filled by a formula (e.g. =SEQUENCE(200) in A2). Typing over any
+  // of its cells breaks that formula for every row, so ids written by a formula are never touched.
+  var idFormulas = lastRow > 1 ? sheet.getRange(2, idColumn + 1, lastRow - 1, 1).getFormulas() : [];
+  var idsFromFormula = idFormulas.some(function (r) { return String(r[0]) !== ''; });
+
+  // Rows numbered in advance (an id but no name) are filled first, keeping their number.
+  // Only the product's own columns are written; the id cell is left as it is.
+  for (var i = 0; i < rows.length; i++) {
+    var id = rows[i][idColumn];
+    if (String(id).trim() !== '' && String(rows[i][nameColumn]).trim() === '') {
+      writeFields_(sheet, i + 2, headers, product);
+      return id;
+    }
+  }
+
+  if (idsFromFormula) {
+    throw new Error('all numbered rows are used: extend the id formula in the sheet to add more numbers');
+  }
+
+  // Plain numbers and none free: add a row at the bottom with the next number
+  var maxId = rows.reduce(function (max, row) { return Math.max(max, Number(row[idColumn]) || 0); }, 0);
+  var newId = maxId + 1;
+  sheet.appendRow(headers.map(function (h) {
+    if (h === 'id') return newId;
     return Object.prototype.hasOwnProperty.call(product, h) ? product[h] : '';
+  }));
+  return newId;
+}
+
+/** Write the product's fields into one row, leaving the id cell and other columns alone. */
+function writeFields_(sheet, rowNumber, headers, product) {
+  headers.forEach(function (h, c) {
+    if (h === 'id' || !Object.prototype.hasOwnProperty.call(product, h)) return;
+    sheet.getRange(rowNumber, c + 1).setValue(product[h]);
   });
-  sheet.appendRow(row);
-  return id;
 }
 
 function json_(data) {
