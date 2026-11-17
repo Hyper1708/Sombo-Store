@@ -18,10 +18,12 @@ PUBLIC_URL = "https://sambo-store-pay.sambo-store.workers.dev"
 STAFF_CHAT_ID = ""
 CHANNEL_CHAT_ID = ""
 
-# Product photos added by the listing bot
-[[r2_buckets]]
-binding = "PHOTOS"
-bucket_name = "sambo-product-photos"
+# Product photos added by the listing bot are saved in Google Drive by the sheet's
+# Apps Script. To store them in Cloudflare R2 instead: enable R2 in the dashboard, run
+# `npx wrangler r2 bucket create sambo-product-photos`, uncomment these lines and deploy.
+# [[r2_buckets]]
+# binding = "PHOTOS"
+# bucket_name = "sambo-product-photos"
 
 # The listing desk keeps albums, drafts and fixes in progress
 [[durable_objects.bindings]]

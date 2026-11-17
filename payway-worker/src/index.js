@@ -13,7 +13,7 @@
  * Listing bot (see src/listings/):
  * POST /api/telegram        → Telegram sends staff-group messages and button presses here
  * POST /api/telegram/setup  → One-time: point the bot's webhook at this Worker
- * GET  /photos/<key>        → Product photos stored in R2
+ * GET  /photos/<key>        → Product photos, only when they are stored in R2 (see wrangler.toml)
  *
  * Secrets (set via: npx wrangler secret put <NAME>):
  *   API_KEY                 — ABA PayWay API key (also signs order tokens)

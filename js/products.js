@@ -3,11 +3,14 @@
 let allProducts = [];
 let categories = new Set();
 
-// Photos added by the listing bot are full https links (stored in R2).
+// Photos added by the listing bot are full https links (Google Drive or R2).
+// A Drive share link pasted by hand (…/file/d/<id>/view or …?id=<id>) becomes a direct image link.
 // Older rows hold a file name, sometimes with a folder; only the name matters.
 const fixImagePath = (path) => {
     const value = String(path ?? '').trim();
     if (!value) return '';
+    const drive = value.match(/drive\.google\.com\/(?:file\/d\/|(?:open|uc|thumbnail)\?(?:[^#]*&)?id=)([\w-]{20,})/);
+    if (drive) return `https://lh3.googleusercontent.com/d/${drive[1]}`;
     if (/^https:\/\//i.test(value)) return value;
     const filename = value.split(/[\\\/]/).pop();
     return `${PRODUCT_IMAGES_DIR}/${filename}`;

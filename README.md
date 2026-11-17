@@ -66,7 +66,7 @@ The browser never decides prices or tells the owner an order is paid; the Worker
 | `name`        | `Blanket`                        | Rows without a name are ignored              |
 | `category`    | `Blanket`                        | Used for the category bar                    |
 | `pricess`     | `45000៛`                         | Price in riel. Spelled `pricess` on purpose  |
-| `images`      | `photo_1.jpg\|photo_2.jpg`       | File names in `images/products/`, or full `https://` links (bot uploads), `\|`-separated |
+| `images`      | `photo_1.jpg\|photo_2.jpg`       | File names in `images/products/`, Google Drive links, or other `https://` links, `\|`-separated |
 | `description` | `Soft cotton`                    | Shown in the product modal                   |
 | `stock`       | `10`                             | 0 or empty shows "Out of stock"              |
 
@@ -121,9 +121,9 @@ From `payway-worker/`:
 ## Listing bot
 
 Employees post new products in a private staff group on Telegram. The bot checks each post,
-asks in Khmer for anything missing, and gives admins a Publish button. Publishing stores the
-photos in Cloudflare R2, adds the row to the product sheet and posts the album in the sales
-channel with a link to the item.
+asks in Khmer for anything missing, and gives admins a Publish button. Publishing saves the
+photos in a Google Drive folder ("Sambo product photos"), adds the row to the product sheet and
+posts the album in the sales channel with a link to the item.
 
 **Template** (one album of 3–6 photos, with this caption):
 
@@ -141,26 +141,29 @@ missing, reply to the bot's message with just those lines (or edit the caption).
 
 **One-time setup**
 
-1. Cloudflare dashboard → R2 Object Storage → enable R2, then from `payway-worker/`:
-   `npx wrangler r2 bucket create sambo-product-photos`
-2. Telegram: create the private staff group, add the employees, and make the bot an admin of
+1. Telegram: create the private staff group, add the employees, and make the bot an admin of
    the staff group and of the sales channel (with "Post messages").
-3. Google Sheet: paste [`google-apps-script/add-product.gs`](google-apps-script/add-product.gs)
-   into the sheet's Apps Script and follow the steps at the top of the file.
-4. Secrets (from `payway-worker/`):
+2. Google Sheet: paste [`google-apps-script/add-product.gs`](google-apps-script/add-product.gs)
+   into the sheet's Apps Script and follow the steps at the top of the file (it asks once for
+   access to Sheets and Drive).
+3. Secrets (from `payway-worker/`):
    ```bash
    npx wrangler secret put SHEET_WRITE_SECRET
    npx wrangler secret put TELEGRAM_WEBHOOK_SECRET
    ```
    `SHEET_WRITE_SECRET` must be the same password as in the Apps Script. The webhook secret can
    be any long random string (letters, digits, `_` and `-`).
-5. `npx wrangler deploy`, then point the bot at the Worker (once):
+4. `npx wrangler deploy`, then point the bot at the Worker (once):
    ```bash
    curl -X POST https://sambo-store-pay.sambo-store.workers.dev/api/telegram/setup \
         -H "Content-Type: application/json" -d '{"secret":"<TELEGRAM_WEBHOOK_SECRET>"}'
    ```
-6. Send `/chatid` in the staff group and in the channel, put the ids in `STAFF_CHAT_ID` and
+5. Send `/chatid` in the staff group and in the channel, put the ids in `STAFF_CHAT_ID` and
    `CHANNEL_CHAT_ID` in `wrangler.toml`, and deploy again.
+
+To keep photos in Cloudflare R2 instead of Google Drive, see the comment above the R2 lines in
+`payway-worker/wrangler.toml`. Existing rows keep working either way: the `images` column can
+mix file names, Drive links and R2 links.
 
 ## Going live
 

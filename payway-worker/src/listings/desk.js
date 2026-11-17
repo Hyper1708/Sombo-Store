@@ -4,7 +4,7 @@
 //  2. Album photos arrive one by one, so they are collected and checked a moment later.
 //  3. Missing or wrong info → the bot replies in Khmer; a reply to that message fixes it.
 //  4. A complete listing becomes a draft card with Publish / Discard buttons for admins.
-//  5. Publish → photos to R2, row in the Google Sheet, album in the sales channel.
+//  5. Publish → photos to Google Drive (or R2), row in the Google Sheet, album in the channel.
 //
 // Being a single object means every update is handled one at a time, in order.
 
