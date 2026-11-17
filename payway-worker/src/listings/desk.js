@@ -1,6 +1,6 @@
 // The listing desk: one Durable Object that handles everything posted in the staff group.
 //
-//  1. Employees post an album (3–6 photos) with the template caption.
+//  1. Employees post an album (3–10 photos) with the template caption.
 //  2. Album photos arrive one by one, so they are collected and checked a moment later.
 //  3. Missing or wrong info → the bot replies in Khmer; a reply to that message fixes it.
 //  4. A complete listing becomes a draft card with Publish / Edit / Discard buttons for admins.

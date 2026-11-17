@@ -9,7 +9,8 @@
 // English labels (name, price, category, stock, description) work too.
 
 export const MIN_PHOTOS = 3;
-export const MAX_PHOTOS = 6;
+// Telegram albums hold at most 10 photos
+export const MAX_PHOTOS = 10;
 
 const LABELS = {
   name: ['ឈ្មោះ', 'name'],

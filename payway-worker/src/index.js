@@ -598,17 +598,22 @@ async function setupTelegramWebhook(body, env, url) {
   if (!secret || !(await sameSecret(String(body.secret || ''), secret))) {
     return { ok: false, error: 'Unauthorized' };
   }
+  const summary = (info) => ({
+    url: info.url,
+    pending_update_count: info.pending_update_count,
+    last_error_date: info.last_error_date ? new Date(info.last_error_date * 1000).toISOString() : null,
+    last_error_message: info.last_error_message || null
+  });
+  // Telegram's view before changing anything: queued updates and its last delivery error
+  const before = summary(await telegram(env, 'getWebhookInfo'));
   await telegram(env, 'setWebhook', {
     url: `${url.origin}/api/telegram`,
     secret_token: secret,
     allowed_updates: ['message', 'edited_message', 'callback_query', 'channel_post'],
-    drop_pending_updates: true
+    // Keep queued updates unless asked, so nothing people did is lost
+    drop_pending_updates: body.drop_pending === true
   });
-  const info = await telegram(env, 'getWebhookInfo');
-  return {
-    ok: true,
-    webhook: { url: info.url, pending_update_count: info.pending_update_count, last_error_message: info.last_error_message || null }
-  };
+  return { ok: true, before, webhook: summary(await telegram(env, 'getWebhookInfo')) };
 }
 
 /** Product photos uploaded by the listing bot, stored in R2. */

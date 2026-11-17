@@ -125,7 +125,7 @@ asks in Khmer for anything missing, and gives admins a Publish button. Publishin
 photos in a Google Drive folder ("Sambo product photos"), adds the row to the product sheet and
 posts the album in the sales channel with a link to the item.
 
-**Template** (one album of 3–6 photos, with this caption):
+**Template** (one album of 3–10 photos, with this caption):
 
 ```
 ឈ្មោះ: ភួយរោមចៀម
