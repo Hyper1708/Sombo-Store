@@ -3,7 +3,8 @@
 //  1. Employees post an album (3–6 photos) with the template caption.
 //  2. Album photos arrive one by one, so they are collected and checked a moment later.
 //  3. Missing or wrong info → the bot replies in Khmer; a reply to that message fixes it.
-//  4. A complete listing becomes a draft card with Publish / Discard buttons for admins.
+//  4. A complete listing becomes a draft card with Publish / Edit / Discard buttons for admins.
+//     Edit (or replying to the card) changes fields before publishing.
 //  5. Publish → photos to Google Drive (or R2), row in the Google Sheet, album in the channel.
 //
 // Being a single object means every update is handled one at a time, in order.
@@ -11,7 +12,8 @@
 import { parseCaption, checkListing, fieldsToFix } from './template.js';
 import {
   problemsText, COMPLETE_TEXT, draftCardText, draftButtons,
-  publishedText, discardedText, publishFailedText, ANSWER
+  publishedText, discardedText, publishFailedText, ANSWER,
+  editPromptText, editDoneText, editProblemsText, EDIT_HINT_TEXT
 } from './messages.js';
 import { telegram, displayName, senderName } from './telegram.js';
 import { publishListing } from './publish.js';
@@ -141,9 +143,13 @@ export class ListingDesk {
     for (const photo of post.photos) await this.storage.put(`post:${photo.message_id}`, reply.message_id);
   }
 
-  /** A reply to the bot's "missing info" message, or to the post itself. */
+  /** A reply to the bot's "missing info" message, to the post itself, or to a draft card / edit prompt. */
   async onReply(msg) {
     const target = msg.reply_to_message.message_id;
+
+    const editDraftId = (await this.storage.get(`edit:${target}`)) || (await this.findDraftByCard(target));
+    if (editDraftId) return this.onDraftEdit(msg, editDraftId, target);
+
     const botMsgId = (await this.storage.get(`pending:${target}`)) ? target : await this.storage.get(`post:${target}`);
     const pending = botMsgId && (await this.storage.get(`pending:${botMsgId}`));
     if (!pending) return;
@@ -197,6 +203,53 @@ export class ListingDesk {
     await this.storage.put(`draft:${draftId}`, draft);
   }
 
+  async findDraftByCard(cardId) {
+    for (const [key, draft] of await this.storage.list({ prefix: 'draft:' })) {
+      if (draft.cardId === cardId) return key.slice('draft:'.length);
+    }
+    return null;
+  }
+
+  replyTo(msg, text) {
+    return this.tg('sendMessage', {
+      chat_id: msg.chat.id,
+      text,
+      parse_mode: 'HTML',
+      reply_parameters: { message_id: msg.message_id, allow_sending_without_reply: true }
+    });
+  }
+
+  /** An admin changes fields of a waiting draft, e.g. "តម្លៃ: 20000" or "ប្រភេទ: កន្សែង". */
+  async onDraftEdit(msg, draftId, target) {
+    const key = `draft:${draftId}`;
+    const draft = await this.storage.get(key);
+    if (!draft || draft.status !== 'waiting') return; // already published or discarded
+    if (!(await this.isAdmin(draft.chatId, msg.from?.id))) return this.replyTo(msg, ANSWER.adminsOnly);
+
+    const changes = parseCaption(msg.text);
+    const changed = Object.keys(changes);
+    if (changed.length === 0) return this.replyTo(msg, EDIT_HINT_TEXT);
+
+    const v = draft.values;
+    const check = checkListing({
+      name: v.name, price: String(v.price), category: v.category, stock: String(v.stock),
+      description: v.description, ...changes
+    }, draft.photos.length);
+    if (!check.complete) return this.replyTo(msg, editProblemsText(check));
+
+    draft.values = check.values;
+    if ('category' in changes) draft.isNewCategory = await this.isNewCategory(draft.values.category);
+    await this.storage.put(key, draft);
+    await this.editCard(draft, draftCardText(draft), draftButtons(draftId));
+
+    // Turn the edit prompt into the confirmation, or answer the reply to the card
+    if (await this.storage.get(`edit:${target}`)) {
+      await this.storage.delete(`edit:${target}`);
+      return this.editText(draft.chatId, target, editDoneText(changed));
+    }
+    return this.replyTo(msg, editDoneText(changed));
+  }
+
   /** Flag categories the website doesn't have yet, so typos are caught before publishing. */
   async isNewCategory(category) {
     try {
@@ -230,6 +283,17 @@ export class ListingDesk {
       await this.storage.delete(key);
       await answer(ANSWER.discarded);
       return this.editCard(draft, discardedText(draft, adminName));
+    }
+    if (action === 'edit') {
+      await answer(ANSWER.editing);
+      const prompt = await this.tg('sendMessage', {
+        chat_id: draft.chatId,
+        text: editPromptText(draft, cb.from.id, adminName),
+        parse_mode: 'HTML',
+        reply_parameters: { message_id: draft.cardId, allow_sending_without_reply: true },
+        reply_markup: { force_reply: true, selective: true, input_field_placeholder: 'តម្លៃ: 20000' }
+      });
+      return this.storage.put(`edit:${prompt.message_id}`, draftId);
     }
     if (action !== 'pub') return answer(ANSWER.done);
 

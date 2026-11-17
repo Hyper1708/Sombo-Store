@@ -22,15 +22,20 @@ const PROBLEM = {
   'stock:invalid': 'ស្តុកមិនត្រឹមត្រូវ — សរសេរជាលេខ ឧ. 20'
 };
 
-/** Reply to a post that is missing information or has mistakes. */
-export function problemsText(check) {
-  const lines = ['⚠️ <b>ព័ត៌មានមិនទាន់គ្រប់គ្រាន់</b>'];
+function problemLines(check) {
+  const lines = [];
   if (check.missing.length) {
     lines.push(`• ខ្វះ៖ ${check.missing.map(f => FIELD_KH[f]).join(', ')}`);
   }
   for (const { field, reason } of check.invalid) {
     lines.push(`• ${PROBLEM[`${field}:${reason}`] || `${FIELD_KH[field]}មិនត្រឹមត្រូវ`}`);
   }
+  return lines;
+}
+
+/** Reply to a post that is missing information or has mistakes. */
+export function problemsText(check) {
+  const lines = ['⚠️ <b>ព័ត៌មានមិនទាន់គ្រប់គ្រាន់</b>', ...problemLines(check)];
   if (!check.photosOk) {
     lines.push(`• រូបភាពត្រូវមានពី ${MIN_PHOTOS} ដល់ ${MAX_PHOTOS} សន្លឹក (ឥឡូវមាន ${check.photoCount})`);
     lines.push('', '📷 សូមផ្ញើរូបភាព និងព័ត៌មានម្តងទៀត ជា album តែមួយ');
@@ -61,9 +66,27 @@ export function draftCardText(draft) {
 export const draftButtons = (draftId) => ({
   inline_keyboard: [[
     { text: '✅ ផ្សាយ', callback_data: `pub:${draftId}` },
+    { text: '✏️ កែប្រែ', callback_data: `edit:${draftId}` },
     { text: '🗑 បោះបង់', callback_data: `del:${draftId}` }
   ]]
 });
+
+/** Sent when an admin taps Edit; Telegram opens the reply box for them. */
+export const editPromptText = (draft, userId, userName) => [
+  `✏️ <b>កែប្រែ៖</b> ${esc(draft.values.name)}`,
+  `<a href="tg://user?id=${Number(userId)}">${esc(userName)}</a> សូមឆ្លើយតប (Reply) សារនេះ ដោយសរសេរតែបន្ទាត់ដែលចង់ប្តូរ ឧ.`,
+  '<code>តម្លៃ: 20000</code>',
+  '<code>ប្រភេទ: កន្សែង</code>',
+  '',
+  '📷 ដើម្បីប្តូររូបភាព សូមចុច 🗑 បោះបង់ ហើយផ្ញើម្តងទៀត'
+].join('\n');
+
+export const editDoneText = (fields) => `✅ បានកែប្រែ៖ ${fields.map(f => FIELD_KH[f] || f).join(', ')}`;
+
+export const EDIT_HINT_TEXT = '⚠️ មិនឃើញបន្ទាត់ដែលត្រូវកែទេ — សូមសរសេរដូចជា <code>តម្លៃ: 20000</code>';
+
+export const editProblemsText = (check) =>
+  ['⚠️ <b>កែប្រែមិនបាន</b>', ...problemLines(check), '', 'សូមឆ្លើយតបម្តងទៀត'].join('\n');
 
 export function publishedText(draft, adminName, outcome) {
   const lines = [
@@ -88,7 +111,8 @@ export const ANSWER = {
   adminsOnly: '⛔ សម្រាប់តែអ្នកគ្រប់គ្រងប៉ុណ្ណោះ',
   busy: '⏳ កំពុងដំណើរការ...',
   publishing: '⏳ កំពុងផ្សាយ...',
-  discarded: '🗑 បានបោះបង់'
+  discarded: '🗑 បានបោះបង់',
+  editing: '✏️ សូមឆ្លើយតបសារខាងក្រោម'
 };
 
 /** Caption of the album the bot posts in the sales channel (Telegram allows 1024 characters). */

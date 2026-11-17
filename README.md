@@ -139,6 +139,10 @@ Name, price (riel), category and stock are required; description is optional. En
 (`name`, `price`, `category`, `stock`, `description`) and Khmer digits work too. If something is
 missing, reply to the bot's message with just those lines (or edit the caption).
 
+The draft card has three buttons for group admins: **✅ ផ្សាយ** (publish), **✏️ កែប្រែ** (edit) and
+**🗑 បោះបង់** (discard). To edit, tap ✏️ (or reply to the card) with just the lines to change,
+e.g. `តម្លៃ: 20000`. Photos can't be edited; discard and post the album again.
+
 **One-time setup**
 
 1. Telegram: create the private staff group, add the employees, and make the bot an admin of
