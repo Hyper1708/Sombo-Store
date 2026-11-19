@@ -9,7 +9,7 @@
 //
 // Being a single object means every update is handled one at a time, in order.
 
-import { parseCaption, checkListing, fieldsToFix } from './template.js';
+import { parseCaption, checkListing, fieldsToFix, removeInvisible } from './template.js';
 import {
   problemsText, COMPLETE_TEXT, draftCardText, draftButtons,
   publishedText, discardedText, publishFailedText, ANSWER,
@@ -262,7 +262,7 @@ export class ListingDesk {
   async lookupSheet(values) {
     try {
       const rows = await (await fetch(this.env.PRODUCTS_URL)).json();
-      const norm = (s) => String(s ?? '').replace(/\s+/g, ' ').trim().toLowerCase();
+      const norm = (s) => removeInvisible(s).replace(/\s+/g, ' ').trim().toLowerCase();
       const known = new Set(rows.map(r => {
         const key = Object.keys(r).find(k => k.trim().toLowerCase() === 'category');
         return norm(key ? r[key] : '');

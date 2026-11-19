@@ -35,11 +35,17 @@ const fieldOf = (label) => FIELDS.find(f => LABELS[f].some(l => l.toLowerCase() 
 /** Khmer digits (០–៩) → 0–9, so "៤៥០០០" reads as 45000. */
 export const toAsciiDigits = (s) => String(s).replace(/[០-៩]/g, d => String(d.charCodeAt(0) - 0x17E0));
 
+// Khmer keyboards often type invisible characters (zero-width spaces between words,
+// direction marks from copy/paste). They can hide a label or break a number, so they're
+// removed before a caption is read. Joiners (U+200C/U+200D) stay: they shape Khmer letters.
+const INVISIBLE = /[­​‎‏‪-‮⁠-⁤⁦-⁩﻿]/g;
+export const removeInvisible = (s) => String(s ?? '').replace(INVISIBLE, '');
+
 /** Pull the labelled lines out of a caption. Unlabelled lines after "description" belong to it. */
 export function parseCaption(text) {
   const fields = {};
   let current = null;
-  for (const raw of String(text || '').split(/\r?\n/)) {
+  for (const raw of removeInvisible(text).split(/\r?\n/)) {
     const line = raw.trim();
     if (!line) continue;
     const match = line.match(LINE_RE);
@@ -53,26 +59,30 @@ export function parseCaption(text) {
   return fields;
 }
 
-/** "45000", "45,000៛", "៤៥០០០", "45k", "45000 រៀល" → 45000 (riel). */
+/** "45000", "45,000៛", "៤៥០០០", "45k", "4 500 រៀល/ដុំ" → 45000 / 4500 (riel). */
 export function parsePriceText(raw) {
-  const s = toAsciiDigits(raw).toLowerCase().replace(/[\s,]/g, '');
+  const s = toAsciiDigits(removeInvisible(raw)).toLowerCase().replace(/[\s,]/g, '');
   if (!s) return { error: 'missing' };
   if (s.includes('$') || s.includes('usd') || s.includes('ដុល្លារ')) return { error: 'currency' };
-  const m = s.match(/^(\d+(?:\.\d+)?)(k)?(?:៛|រៀល|riel|khr|r)?$/);
+  // A number, an optional "k" (thousand), then any unit words without digits (៛, រៀល, /ដុំ...)
+  const m = s.match(/^(\d+(?:\.\d+)?)(k)?(\D*)$/);
   if (!m) return { error: 'invalid' };
   const value = Math.round(Number(m[1]) * (m[2] ? 1000 : 1));
   if (!(value >= 100 && value <= 50_000_000)) return { error: 'invalid' };
   return { value };
 }
 
+/** "500", "៥០០", "1,200", "500 ដុំ" → 500 / 1200. */
 export function parseStockText(raw) {
-  const s = toAsciiDigits(raw).replace(/[\s,]/g, '');
+  const s = toAsciiDigits(removeInvisible(raw)).replace(/[\s,]/g, '');
   if (!s) return { error: 'missing' };
-  if (!/^\d+$/.test(s) || Number(s) > 1_000_000) return { error: 'invalid' };
-  return { value: Number(s) };
+  // A whole number, then any unit words without digits (ដុំ, pcs...)
+  const m = s.match(/^(\d+)(\D*)$/);
+  if (!m || Number(m[1]) > 1_000_000) return { error: 'invalid' };
+  return { value: Number(m[1]) };
 }
 
-const oneLine = (v) => String(v ?? '').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim();
+const oneLine = (v) => removeInvisible(v).replace(/[<>]/g, '').replace(/\s+/g, ' ').trim();
 
 /**
  * Check a listing. Returns what is missing or wrong, plus the clean values when it is complete.
