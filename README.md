@@ -128,20 +128,26 @@ posts the album in the sales channel with a link to the item.
 **Template** (one album of 3–10 photos, with this caption):
 
 ```
-ឈ្មោះ: ភួយរោមចៀម
-តម្លៃ: 45000
-ប្រភេទ: ភួយ
-ស្តុក: 20
-ពិពណ៌នា: ទំហំ 2x2.2m
+ឈ្មោះ : កន្សែងពោះគោ
+តំម្តៃ : 18000
+ទំហំ : 2m x 1.8m
+ប្រភេទ: កន្សែង
+ស្តុក: 500
+លេខ: 33
 ```
 
-Name, price (riel), category and stock are required; description is optional. English labels
-(`name`, `price`, `category`, `stock`, `description`) and Khmer digits work too. If something is
-missing, reply to the bot's message with just those lines (or edit the caption).
+Name, price (riel), category and stock are required. Size (ទំហំ) and the item number (លេខ) are
+optional: without a number the sheet gives the next free one, and a number another product already
+uses is refused. The price label can be spelled តំម្តៃ, តម្លៃ or តំលៃ. English labels (`name`, `price`,
+`size`, `category`, `stock`, `id`, `description`) and Khmer digits work too. If something is missing,
+reply to the bot's message with just those lines (or edit the caption).
+
+Sizes go in a `size` column if the sheet has one (the website then shows "Size: …" in the product
+popup); otherwise they're added to the start of the description.
 
 The draft card has three buttons for group admins: **✅ ផ្សាយ** (publish), **✏️ កែប្រែ** (edit) and
 **🗑 បោះបង់** (discard). To edit, tap ✏️ (or reply to the card) with just the lines to change,
-e.g. `តម្លៃ: 20000`. Photos can't be edited; discard and post the album again.
+e.g. `តំម្តៃ: 20000`. Photos can't be edited; discard and post the album again.
 
 **One-time setup**
 

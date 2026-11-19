@@ -9,7 +9,7 @@
 //
 // Being a single object means every update is handled one at a time, in order.
 
-import { parseCaption, checkListing, fieldsToFix } from './template.js';
+import { parseCaption, checkListing, fieldsToFix, markIdTaken } from './template.js';
 import {
   problemsText, COMPLETE_TEXT, draftCardText, draftButtons,
   publishedText, discardedText, publishFailedText, ANSWER,
@@ -127,8 +127,8 @@ export class ListingDesk {
   /** First look at a new post (single photo or a whole album). */
   async checkPost(post) {
     const fields = parseCaption(post.caption);
-    const check = checkListing(fields, post.photos.length);
-    if (check.complete) return this.createDraft(post, check.values);
+    const { check, sheet } = await this.fullCheck(fields, post.photos.length);
+    if (check.complete) return this.createDraft(post, check.values, sheet);
 
     const reply = await this.tg('sendMessage', {
       chat_id: post.chatId,
@@ -175,7 +175,7 @@ export class ListingDesk {
   }
 
   async recheck(botMsgId, pending) {
-    const check = checkListing(pending.fields, pending.photos.length);
+    const { check, sheet } = await this.fullCheck(pending.fields, pending.photos.length);
     if (!check.complete) {
       await this.storage.put(`pending:${botMsgId}`, pending);
       return this.editText(pending.chatId, botMsgId, problemsText(check));
@@ -183,14 +183,24 @@ export class ListingDesk {
     await this.storage.delete(`pending:${botMsgId}`);
     for (const photo of pending.photos) await this.storage.delete(`post:${photo.message_id}`);
     await this.editText(pending.chatId, botMsgId, COMPLETE_TEXT);
-    return this.createDraft(pending, check.values);
+    return this.createDraft(pending, check.values, sheet);
   }
 
-  async createDraft(post, values) {
+  /** Check the template; when it's complete, also check the item number against the sheet. */
+  async fullCheck(fields, photoCount) {
+    const check = checkListing(fields, photoCount);
+    if (!check.complete) return { check, sheet: null };
+    const sheet = await this.lookupSheet(check.values);
+    if (sheet.takenBy) markIdTaken(check, sheet.takenBy);
+    return { check, sheet };
+  }
+
+  async createDraft(post, values, sheet) {
     const draftId = crypto.randomUUID().replace(/-/g, '').slice(0, 12);
+    const { isNewCategory } = sheet || (await this.lookupSheet(values));
     const draft = {
       chatId: post.chatId, postId: post.postId, photos: post.photos, from: post.from,
-      values, isNewCategory: await this.isNewCategory(values.category), status: 'waiting'
+      values, isNewCategory, status: 'waiting'
     };
     const card = await this.tg('sendMessage', {
       chat_id: post.chatId,
@@ -231,14 +241,14 @@ export class ListingDesk {
     if (changed.length === 0) return this.replyTo(msg, EDIT_HINT_TEXT);
 
     const v = draft.values;
-    const check = checkListing({
-      name: v.name, price: String(v.price), category: v.category, stock: String(v.stock),
-      description: v.description, ...changes
+    const { check, sheet } = await this.fullCheck({
+      name: v.name, price: String(v.price), size: v.size, category: v.category, stock: String(v.stock),
+      id: v.id, description: v.description, ...changes
     }, draft.photos.length);
     if (!check.complete) return this.replyTo(msg, editProblemsText(check));
 
     draft.values = check.values;
-    if ('category' in changes) draft.isNewCategory = await this.isNewCategory(draft.values.category);
+    draft.isNewCategory = sheet.isNewCategory;
     await this.storage.put(key, draft);
     await this.editCard(draft, draftCardText(draft), draftButtons(draftId));
 
@@ -250,19 +260,29 @@ export class ListingDesk {
     return this.replyTo(msg, editDoneText(changed));
   }
 
-  /** Flag categories the website doesn't have yet, so typos are caught before publishing. */
-  async isNewCategory(category) {
+  /**
+   * Look the listing up in the product sheet:
+   *  - isNewCategory flags categories the website doesn't have yet, so typos are caught;
+   *  - takenBy names the product already using the chosen item number, if any.
+   */
+  async lookupSheet(values) {
     try {
-      const res = await fetch(this.env.PRODUCTS_URL);
-      const rows = await res.json();
-      const norm = (c) => String(c ?? '').replace(/\s+/g, ' ').trim().toLowerCase();
-      const known = new Set(rows.map(r => {
-        const key = Object.keys(r).find(k => k.trim().toLowerCase() === 'category');
-        return norm(key ? r[key] : '');
-      }));
-      return !known.has(norm(category));
+      const rows = await (await fetch(this.env.PRODUCTS_URL)).json();
+      const norm = (s) => String(s ?? '').replace(/\s+/g, ' ').trim().toLowerCase();
+      const col = (row, name) => {
+        const key = Object.keys(row).find(k => k.trim().toLowerCase() === name);
+        return key ? row[key] : '';
+      };
+      const known = new Set(rows.map(r => norm(col(r, 'category'))));
+      const holder = values.id
+        ? rows.find(r => norm(col(r, 'id')) === norm(values.id) && norm(col(r, 'name')))
+        : null;
+      return {
+        isNewCategory: !known.has(norm(values.category)),
+        takenBy: holder ? String(col(holder, 'name')).trim() : null
+      };
     } catch {
-      return false; // can't tell; don't block anything
+      return { isNewCategory: false, takenBy: null }; // can't tell; don't block anything
     }
   }
 
@@ -291,7 +311,7 @@ export class ListingDesk {
         text: editPromptText(draft, cb.from.id, adminName),
         parse_mode: 'HTML',
         reply_parameters: { message_id: draft.cardId, allow_sending_without_reply: true },
-        reply_markup: { force_reply: true, selective: true, input_field_placeholder: 'តម្លៃ: 20000' }
+        reply_markup: { force_reply: true, selective: true, input_field_placeholder: 'តំម្តៃ: 20000' }
       });
       return this.storage.put(`edit:${prompt.message_id}`, draftId);
     }

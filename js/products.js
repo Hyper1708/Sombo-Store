@@ -137,6 +137,10 @@ const openProductModal = (index) => {
     document.getElementById('productModalCategory').textContent = categoryDisplay;
 
     document.getElementById('productModalPrice').textContent = formatKHR(parsePrice(product.pricess));
+    const size = String(product.size ?? '').trim();
+    const sizeEl = document.getElementById('productModalSize');
+    sizeEl.textContent = size ? `${t.sizeLabel}: ${size}` : '';
+    sizeEl.style.display = size ? '' : 'none';
     document.getElementById('productModalDescription').textContent = product.description || '';
 
     // Stock status

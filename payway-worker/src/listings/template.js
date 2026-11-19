@@ -1,23 +1,29 @@
 // The listing template employees write under their photos, e.g.
 //
 //   ឈ្មោះ: ភួយរោមចៀម
-//   តម្លៃ: 45000
+//   តំម្តៃ: 45000
+//   ទំហំ: 2m x 2.2m
 //   ប្រភេទ: ភួយ
 //   ស្តុក: 20
-//   ពិពណ៌នា: ទំហំ 2x2.2m
+//   លេខ: 33
 //
-// English labels (name, price, category, stock, description) work too.
+// Required: name, price, category, stock. Optional: size, id (the item number;
+// left empty, the sheet picks the next free one) and description.
+// English labels (name, price, size, category, stock, id, description) work too.
 
 export const MIN_PHOTOS = 3;
 // Telegram albums hold at most 10 photos
 export const MAX_PHOTOS = 10;
 
+// Several spellings are common in Khmer, so each field accepts all of them.
+// Within a field, longer labels come first (លេខកូដ before លេខ).
 const LABELS = {
   name: ['ឈ្មោះ', 'name'],
-  price: ['តម្លៃ', 'price'],
+  price: ['តម្លៃ', 'តំម្តៃ', 'តំលៃ', 'price'],
+  size: ['ទំហំ', 'size'],
   category: ['ប្រភេទ', 'category'],
-  // Both spellings of "stock" are common in Khmer
   stock: ['ស្តុក', 'ស្ដុក', 'stock', 'qty'],
+  id: ['លេខកូដ', 'លេខ', 'id', 'code'],
   description: ['ពិពណ៌នា', 'description', 'desc']
 };
 
@@ -104,6 +110,15 @@ export function checkListing(fields, photoCount) {
     else values.stock = stock.value;
   }
 
+  const size = oneLine(fields.size);
+  if (size.length > 60) invalid.push({ field: 'size', reason: 'long' });
+  else values.size = size;
+
+  // Item number chosen by the employee; empty means "next free number"
+  const id = oneLine(toAsciiDigits(fields.id ?? '')).replace(/^#/, '');
+  if (id && !/^[A-Za-z0-9_-]{1,20}$/.test(id)) invalid.push({ field: 'id', reason: 'invalid' });
+  else values.id = id;
+
   values.description = String(fields.description ?? '')
     .replace(/[<>]/g, '')
     .split('\n').map(l => l.trim()).filter(Boolean).join('\n')
@@ -114,6 +129,13 @@ export function checkListing(fields, photoCount) {
     complete: photosOk && missing.length === 0 && invalid.length === 0,
     missing, invalid, photosOk, photoCount, values
   };
+}
+
+/** The chosen item number already belongs to another product in the sheet. */
+export function markIdTaken(check, takenBy) {
+  check.complete = false;
+  check.invalid.push({ field: 'id', reason: 'taken', detail: { id: check.values.id, name: takenBy } });
+  return check;
 }
 
 /** Fields that still need an answer, in template order. */

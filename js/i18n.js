@@ -23,6 +23,7 @@ const translations = {
         itemNoteLabel: 'Note for us (optional)',
         itemNotePlaceholder: 'e.g. colors, sizes, packing',
         itemNotFound: 'Sorry, this item is no longer available',
+        sizeLabel: 'Size',
 
         // Sign Up Modal
         yourInfo: '📝 Your Information',
@@ -134,6 +135,7 @@ const translations = {
         itemNoteLabel: 'កំណត់ចំណាំសម្រាប់ក្រុមការងារ',
         itemNotePlaceholder: 'ឧ. ពណ៌ ទំហំ ការវេចខ្ចប់',
         itemNotFound: 'សូមអភ័យទោស ទំនិញនេះលែងមានហើយ',
+        sizeLabel: 'ទំហំ',
 
         // Sign Up Modal
         yourInfo: '📝 ព័ត៌មានរបស់អ្នក',

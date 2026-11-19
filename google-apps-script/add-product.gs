@@ -9,9 +9,11 @@
  *      Editing the existing deployment keeps the same web app URL.
  *      Google asks once to allow access to Sheets and Drive: allow it.
  *
- * The bot sends { secret, action: "addProduct", product: { name, category, pricess, stock,
- * description }, photos: [{ name, mimeType, data (base64) }] } and gets back
- * { ok: true, id, images } with the new item id and the photo links.
+ * The bot sends { secret, action: "addProduct", product: { name, category, pricess, size, stock,
+ * description, id }, photos: [{ name, mimeType, data (base64) }] } and gets back
+ * { ok: true, id, images } with the item id and the photo links. An empty id means
+ * "use the next free number"; a chosen id that another product already has is refused.
+ * To show sizes in their own column, add a column with the header "size" to the sheet.
  */
 
 // Leave empty if this script is attached to the product spreadsheet (Extensions → Apps Script).
@@ -90,16 +92,47 @@ function addProduct_(product) {
   var lastRow = sheet.getLastRow();
   var rows = lastRow > 1 ? sheet.getRange(2, 1, lastRow - 1, headers.length).getValues() : [];
 
+  // The item number the employee chose (empty: use the next free one)
+  var wanted = String(product.id == null ? '' : product.id).trim();
+  delete product.id;
+
+  // Size goes in its own "size" column; without one, it starts the description
+  if (headers.indexOf('size') === -1) {
+    if (product.size) {
+      product.description = 'ទំហំ: ' + product.size + (product.description ? '\n' + product.description : '');
+    }
+    delete product.size;
+  }
+
   // The id column may be filled by a formula (e.g. =SEQUENCE(200) in A2). Typing over any
   // of its cells breaks that formula for every row, so ids written by a formula are never touched.
   var idFormulas = lastRow > 1 ? sheet.getRange(2, idColumn + 1, lastRow - 1, 1).getFormulas() : [];
   var idsFromFormula = idFormulas.some(function (r) { return String(r[0]) !== ''; });
 
+  var isFree = function (row) { return String(row[nameColumn]).trim() === ''; };
+
+  if (wanted) {
+    for (var w = 0; w < rows.length; w++) {
+      if (String(rows[w][idColumn]).trim().toLowerCase() !== wanted.toLowerCase()) continue;
+      if (!isFree(rows[w])) {
+        throw new Error('លេខ ' + wanted + ' មានរួចហើយ (' + String(rows[w][nameColumn]).trim() + ')');
+      }
+      writeFields_(sheet, w + 2, headers, product);
+      return rows[w][idColumn];
+    }
+    if (idsFromFormula) {
+      throw new Error('លេខ ' + wanted + ' មិនមាននៅក្នុងសន្លឹកទេ (the id column is a formula)');
+    }
+    var chosen = /^\d+$/.test(wanted) ? Number(wanted) : wanted;
+    sheet.appendRow(rowFor_(headers, product, chosen));
+    return chosen;
+  }
+
   // Rows numbered in advance (an id but no name) are filled first, keeping their number.
   // Only the product's own columns are written; the id cell is left as it is.
   for (var i = 0; i < rows.length; i++) {
     var id = rows[i][idColumn];
-    if (String(id).trim() !== '' && String(rows[i][nameColumn]).trim() === '') {
+    if (String(id).trim() !== '' && isFree(rows[i])) {
       writeFields_(sheet, i + 2, headers, product);
       return id;
     }
@@ -112,11 +145,15 @@ function addProduct_(product) {
   // Plain numbers and none free: add a row at the bottom with the next number
   var maxId = rows.reduce(function (max, row) { return Math.max(max, Number(row[idColumn]) || 0); }, 0);
   var newId = maxId + 1;
-  sheet.appendRow(headers.map(function (h) {
-    if (h === 'id') return newId;
-    return Object.prototype.hasOwnProperty.call(product, h) ? product[h] : '';
-  }));
+  sheet.appendRow(rowFor_(headers, product, newId));
   return newId;
+}
+
+function rowFor_(headers, product, id) {
+  return headers.map(function (h) {
+    if (h === 'id') return id;
+    return Object.prototype.hasOwnProperty.call(product, h) ? product[h] : '';
+  });
 }
 
 /** Write the product's fields into one row, leaving the id cell and other columns alone. */

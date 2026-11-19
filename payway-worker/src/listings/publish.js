@@ -58,8 +58,11 @@ export async function publishListing(env, draftId, draft) {
     name: values.name,
     category: values.category,
     pricess: `${values.price}៛`,
+    size: values.size || '',
     stock: values.stock,
-    description: values.description
+    description: values.description,
+    // The sheet script uses this number if it's free, or picks the next one when empty
+    id: values.id || ''
   };
 
   let saved;

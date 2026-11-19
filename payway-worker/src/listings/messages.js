@@ -5,21 +5,28 @@ import { MIN_PHOTOS, MAX_PHOTOS, fieldsToFix } from './template.js';
 export const esc = (v) => String(v ?? '').replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
 export const formatKHR = (n) => Math.round(n).toLocaleString('en-US') + '៛';
 
-const FIELD_KH = { name: 'ឈ្មោះ', price: 'តម្លៃ', category: 'ប្រភេទ', stock: 'ស្តុក', description: 'ពិពណ៌នា' };
+// Labels as they appear in the staff template
+const FIELD_KH = {
+  name: 'ឈ្មោះ', price: 'តំម្តៃ', size: 'ទំហំ', category: 'ប្រភេទ', stock: 'ស្តុក', id: 'លេខ', description: 'ពិពណ៌នា'
+};
 
 const EXAMPLE = {
   name: 'ឈ្មោះ: ភួយរោមចៀម',
-  price: 'តម្លៃ: 45000',
+  price: 'តំម្តៃ: 45000',
+  size: 'ទំហំ: 2m x 1.8m',
   category: 'ប្រភេទ: ភួយ',
-  stock: 'ស្តុក: 20'
+  stock: 'ស្តុក: 20',
+  id: 'លេខ: 33'
 };
 
 const PROBLEM = {
   'name:long': 'ឈ្មោះវែងពេក (យ៉ាងច្រើន 100 តួអក្សរ)',
-  'price:invalid': 'តម្លៃមិនត្រឹមត្រូវ — សរសេរជាលេខរៀល ឧ. 45000',
-  'price:currency': 'តម្លៃត្រូវជាប្រាក់រៀល (៛) មិនមែនដុល្លារ',
+  'price:invalid': 'តំម្តៃមិនត្រឹមត្រូវ — សរសេរជាលេខរៀល ឧ. 45000',
+  'price:currency': 'តំម្តៃត្រូវជាប្រាក់រៀល (៛) មិនមែនដុល្លារ',
+  'size:long': 'ទំហំវែងពេក (យ៉ាងច្រើន 60 តួអក្សរ)',
   'category:long': 'ប្រភេទវែងពេក (យ៉ាងច្រើន 40 តួអក្សរ)',
-  'stock:invalid': 'ស្តុកមិនត្រឹមត្រូវ — សរសេរជាលេខ ឧ. 20'
+  'stock:invalid': 'ស្តុកមិនត្រឹមត្រូវ — សរសេរជាលេខ ឧ. 20',
+  'id:invalid': 'លេខមិនត្រឹមត្រូវ — ប្រើតែលេខ ឬអក្សរឡាតាំង ឧ. 33'
 };
 
 function problemLines(check) {
@@ -27,7 +34,11 @@ function problemLines(check) {
   if (check.missing.length) {
     lines.push(`• ខ្វះ៖ ${check.missing.map(f => FIELD_KH[f]).join(', ')}`);
   }
-  for (const { field, reason } of check.invalid) {
+  for (const { field, reason, detail } of check.invalid) {
+    if (field === 'id' && reason === 'taken') {
+      lines.push(`• លេខ ${esc(detail.id)} មានរួចហើយ (${esc(detail.name)}) — សូមប្រើលេខផ្សេង ឬលុបបន្ទាត់លេខចោល`);
+      continue;
+    }
     lines.push(`• ${PROBLEM[`${field}:${reason}`] || `${FIELD_KH[field]}មិនត្រឹមត្រូវ`}`);
   }
   return lines;
@@ -41,7 +52,7 @@ export function problemsText(check) {
     lines.push('', '📷 សូមផ្ញើរូបភាព និងព័ត៌មានម្តងទៀត ជា album តែមួយ');
   } else {
     const first = fieldsToFix(check)[0];
-    lines.push('', '✍️ សូមឆ្លើយតប (Reply) សារនេះ ដោយសរសេរតែបន្ទាត់ដែលខ្វះ ឧ.', `<code>${esc(EXAMPLE[first] || 'តម្លៃ: 45000')}</code>`);
+    lines.push('', '✍️ សូមឆ្លើយតប (Reply) សារនេះ ដោយសរសេរតែបន្ទាត់ដែលខ្វះ ឧ.', `<code>${esc(EXAMPLE[first] || EXAMPLE.price)}</code>`);
   }
   return lines.join('\n');
 }
@@ -54,9 +65,11 @@ export function draftCardText(draft) {
   return [
     '📦 <b>ទំនិញថ្មី — រង់ចាំការអនុម័ត</b>',
     `ឈ្មោះ: <b>${esc(v.name)}</b>`,
-    `តម្លៃ: ${formatKHR(v.price)}`,
+    `តំម្តៃ: ${formatKHR(v.price)}`,
+    v.size ? `ទំហំ: ${esc(v.size)}` : null,
     `ប្រភេទ: ${esc(v.category)}${draft.isNewCategory ? ' <i>(ប្រភេទថ្មី)</i>' : ''}`,
     `ស្តុក: ${v.stock}`,
+    `លេខ: ${v.id ? `#${esc(v.id)}` : '<i>(លេខបន្ទាប់ដោយស្វ័យប្រវត្តិ)</i>'}`,
     v.description ? `ពិពណ៌នា: ${esc(v.description)}` : null,
     `📷 រូបភាព: ${draft.photos.length} សន្លឹក`,
     `👤 ផ្ញើដោយ: ${esc(draft.from)}`
@@ -75,7 +88,7 @@ export const draftButtons = (draftId) => ({
 export const editPromptText = (draft, userId, userName) => [
   `✏️ <b>កែប្រែ៖</b> ${esc(draft.values.name)}`,
   `<a href="tg://user?id=${Number(userId)}">${esc(userName)}</a> សូមឆ្លើយតប (Reply) សារនេះ ដោយសរសេរតែបន្ទាត់ដែលចង់ប្តូរ ឧ.`,
-  '<code>តម្លៃ: 20000</code>',
+  '<code>តំម្តៃ: 20000</code>',
   '<code>ប្រភេទ: កន្សែង</code>',
   '',
   '📷 ដើម្បីប្តូររូបភាព សូមចុច 🗑 បោះបង់ ហើយផ្ញើម្តងទៀត'
@@ -83,7 +96,7 @@ export const editPromptText = (draft, userId, userName) => [
 
 export const editDoneText = (fields) => `✅ បានកែប្រែ៖ ${fields.map(f => FIELD_KH[f] || f).join(', ')}`;
 
-export const EDIT_HINT_TEXT = '⚠️ មិនឃើញបន្ទាត់ដែលត្រូវកែទេ — សូមសរសេរដូចជា <code>តម្លៃ: 20000</code>';
+export const EDIT_HINT_TEXT = '⚠️ មិនឃើញបន្ទាត់ដែលត្រូវកែទេ — សូមសរសេរដូចជា <code>តំម្តៃ: 20000</code>';
 
 export const editProblemsText = (check) =>
   ['⚠️ <b>កែប្រែមិនបាន</b>', ...problemLines(check), '', 'សូមឆ្លើយតបម្តងទៀត'].join('\n');
@@ -120,8 +133,9 @@ export function channelCaption(values, id, link) {
   const head = [
     `🛍 <b>${esc(values.name)}</b>`,
     `💰 តម្លៃ: ${formatKHR(values.price)}`,
+    values.size ? `📏 ទំហំ: ${esc(values.size)}` : null,
     `📦 លេខកូដ: #${esc(id)}`
-  ].join('\n');
+  ].filter(Boolean).join('\n');
   const foot = `🛒 <a href="${esc(link)}">បញ្ជាទិញនៅលើគេហទំព័រ</a>`;
   let description = esc(values.description || '');
   const room = 1000 - head.length - foot.length;
