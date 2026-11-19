@@ -7,7 +7,7 @@ export const formatKHR = (n) => Math.round(n).toLocaleString('en-US') + '៛';
 
 // Labels as they appear in the staff template
 const FIELD_KH = {
-  name: 'ឈ្មោះ', price: 'តំម្តៃ', size: 'ទំហំ', category: 'ប្រភេទ', stock: 'ស្តុក', id: 'លេខ', description: 'ពិពណ៌នា'
+  name: 'ឈ្មោះ', price: 'តំម្តៃ', size: 'ទំហំ', category: 'ប្រភេទ', stock: 'ស្តុក', description: 'ពិពណ៌នា'
 };
 
 const EXAMPLE = {
@@ -15,8 +15,7 @@ const EXAMPLE = {
   price: 'តំម្តៃ: 45000',
   size: 'ទំហំ: 2m x 1.8m',
   category: 'ប្រភេទ: ភួយ',
-  stock: 'ស្តុក: 20',
-  id: 'លេខ: 33'
+  stock: 'ស្តុក: 20'
 };
 
 const PROBLEM = {
@@ -25,8 +24,7 @@ const PROBLEM = {
   'price:currency': 'តំម្តៃត្រូវជាប្រាក់រៀល (៛) មិនមែនដុល្លារ',
   'size:long': 'ទំហំវែងពេក (យ៉ាងច្រើន 60 តួអក្សរ)',
   'category:long': 'ប្រភេទវែងពេក (យ៉ាងច្រើន 40 តួអក្សរ)',
-  'stock:invalid': 'ស្តុកមិនត្រឹមត្រូវ — សរសេរជាលេខ ឧ. 20',
-  'id:invalid': 'លេខមិនត្រឹមត្រូវ — ប្រើតែលេខ ឬអក្សរឡាតាំង ឧ. 33'
+  'stock:invalid': 'ស្តុកមិនត្រឹមត្រូវ — សរសេរជាលេខ ឧ. 20'
 };
 
 function problemLines(check) {
@@ -34,11 +32,7 @@ function problemLines(check) {
   if (check.missing.length) {
     lines.push(`• ខ្វះ៖ ${check.missing.map(f => FIELD_KH[f]).join(', ')}`);
   }
-  for (const { field, reason, detail } of check.invalid) {
-    if (field === 'id' && reason === 'taken') {
-      lines.push(`• លេខ ${esc(detail.id)} មានរួចហើយ (${esc(detail.name)}) — សូមប្រើលេខផ្សេង ឬលុបបន្ទាត់លេខចោល`);
-      continue;
-    }
+  for (const { field, reason } of check.invalid) {
     lines.push(`• ${PROBLEM[`${field}:${reason}`] || `${FIELD_KH[field]}មិនត្រឹមត្រូវ`}`);
   }
   return lines;
@@ -69,7 +63,6 @@ export function draftCardText(draft) {
     v.size ? `ទំហំ: ${esc(v.size)}` : null,
     `ប្រភេទ: ${esc(v.category)}${draft.isNewCategory ? ' <i>(ប្រភេទថ្មី)</i>' : ''}`,
     `ស្តុក: ${v.stock}`,
-    `លេខ: ${v.id ? `#${esc(v.id)}` : '<i>(លេខបន្ទាប់ដោយស្វ័យប្រវត្តិ)</i>'}`,
     v.description ? `ពិពណ៌នា: ${esc(v.description)}` : null,
     `📷 រូបភាព: ${draft.photos.length} សន្លឹក`,
     `👤 ផ្ញើដោយ: ${esc(draft.from)}`

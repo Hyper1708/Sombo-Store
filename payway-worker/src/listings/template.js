@@ -5,25 +5,22 @@
 //   ទំហំ: 2m x 2.2m
 //   ប្រភេទ: ភួយ
 //   ស្តុក: 20
-//   លេខ: 33
 //
-// Required: name, price, category, stock. Optional: size, id (the item number;
-// left empty, the sheet picks the next free one) and description.
-// English labels (name, price, size, category, stock, id, description) work too.
+// Required: name, price, category, stock. Optional: size and description.
+// The item number is always given by the sheet (next free number), never typed.
+// English labels (name, price, size, category, stock, description) work too.
 
 export const MIN_PHOTOS = 3;
 // Telegram albums hold at most 10 photos
 export const MAX_PHOTOS = 10;
 
 // Several spellings are common in Khmer, so each field accepts all of them.
-// Within a field, longer labels come first (លេខកូដ before លេខ).
 const LABELS = {
   name: ['ឈ្មោះ', 'name'],
   price: ['តម្លៃ', 'តំម្តៃ', 'តំលៃ', 'price'],
   size: ['ទំហំ', 'size'],
   category: ['ប្រភេទ', 'category'],
   stock: ['ស្តុក', 'ស្ដុក', 'stock', 'qty'],
-  id: ['លេខកូដ', 'លេខ', 'id', 'code'],
   description: ['ពិពណ៌នា', 'description', 'desc']
 };
 
@@ -114,11 +111,6 @@ export function checkListing(fields, photoCount) {
   if (size.length > 60) invalid.push({ field: 'size', reason: 'long' });
   else values.size = size;
 
-  // Item number chosen by the employee; empty means "next free number"
-  const id = oneLine(toAsciiDigits(fields.id ?? '')).replace(/^#/, '');
-  if (id && !/^[A-Za-z0-9_-]{1,20}$/.test(id)) invalid.push({ field: 'id', reason: 'invalid' });
-  else values.id = id;
-
   values.description = String(fields.description ?? '')
     .replace(/[<>]/g, '')
     .split('\n').map(l => l.trim()).filter(Boolean).join('\n')
@@ -129,13 +121,6 @@ export function checkListing(fields, photoCount) {
     complete: photosOk && missing.length === 0 && invalid.length === 0,
     missing, invalid, photosOk, photoCount, values
   };
-}
-
-/** The chosen item number already belongs to another product in the sheet. */
-export function markIdTaken(check, takenBy) {
-  check.complete = false;
-  check.invalid.push({ field: 'id', reason: 'taken', detail: { id: check.values.id, name: takenBy } });
-  return check;
 }
 
 /** Fields that still need an answer, in template order. */

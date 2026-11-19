@@ -60,9 +60,8 @@ export async function publishListing(env, draftId, draft) {
     pricess: `${values.price}៛`,
     size: values.size || '',
     stock: values.stock,
-    description: values.description,
-    // The sheet script uses this number if it's free, or picks the next one when empty
-    id: values.id || ''
+    description: values.description
+    // No id: the sheet script gives the next free number
   };
 
   let saved;

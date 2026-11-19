@@ -9,7 +9,7 @@
 //
 // Being a single object means every update is handled one at a time, in order.
 
-import { parseCaption, checkListing, fieldsToFix, markIdTaken } from './template.js';
+import { parseCaption, checkListing, fieldsToFix } from './template.js';
 import {
   problemsText, COMPLETE_TEXT, draftCardText, draftButtons,
   publishedText, discardedText, publishFailedText, ANSWER,
@@ -186,13 +186,11 @@ export class ListingDesk {
     return this.createDraft(pending, check.values, sheet);
   }
 
-  /** Check the template; when it's complete, also check the item number against the sheet. */
+  /** Check the template; when it's complete, also look the listing up in the sheet. */
   async fullCheck(fields, photoCount) {
     const check = checkListing(fields, photoCount);
     if (!check.complete) return { check, sheet: null };
-    const sheet = await this.lookupSheet(check.values);
-    if (sheet.takenBy) markIdTaken(check, sheet.takenBy);
-    return { check, sheet };
+    return { check, sheet: await this.lookupSheet(check.values) };
   }
 
   async createDraft(post, values, sheet) {
@@ -243,7 +241,7 @@ export class ListingDesk {
     const v = draft.values;
     const { check, sheet } = await this.fullCheck({
       name: v.name, price: String(v.price), size: v.size, category: v.category, stock: String(v.stock),
-      id: v.id, description: v.description, ...changes
+      description: v.description, ...changes
     }, draft.photos.length);
     if (!check.complete) return this.replyTo(msg, editProblemsText(check));
 
@@ -260,29 +258,18 @@ export class ListingDesk {
     return this.replyTo(msg, editDoneText(changed));
   }
 
-  /**
-   * Look the listing up in the product sheet:
-   *  - isNewCategory flags categories the website doesn't have yet, so typos are caught;
-   *  - takenBy names the product already using the chosen item number, if any.
-   */
+  /** Look the listing up in the product sheet: flag categories the website doesn't have yet. */
   async lookupSheet(values) {
     try {
       const rows = await (await fetch(this.env.PRODUCTS_URL)).json();
       const norm = (s) => String(s ?? '').replace(/\s+/g, ' ').trim().toLowerCase();
-      const col = (row, name) => {
-        const key = Object.keys(row).find(k => k.trim().toLowerCase() === name);
-        return key ? row[key] : '';
-      };
-      const known = new Set(rows.map(r => norm(col(r, 'category'))));
-      const holder = values.id
-        ? rows.find(r => norm(col(r, 'id')) === norm(values.id) && norm(col(r, 'name')))
-        : null;
-      return {
-        isNewCategory: !known.has(norm(values.category)),
-        takenBy: holder ? String(col(holder, 'name')).trim() : null
-      };
+      const known = new Set(rows.map(r => {
+        const key = Object.keys(r).find(k => k.trim().toLowerCase() === 'category');
+        return norm(key ? r[key] : '');
+      }));
+      return { isNewCategory: !known.has(norm(values.category)) };
     } catch {
-      return { isNewCategory: false, takenBy: null }; // can't tell; don't block anything
+      return { isNewCategory: false }; // can't tell; don't block anything
     }
   }
 

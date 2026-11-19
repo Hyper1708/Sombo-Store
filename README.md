@@ -133,13 +133,12 @@ posts the album in the sales channel with a link to the item.
 ទំហំ : 2m x 1.8m
 ប្រភេទ: កន្សែង
 ស្តុក: 500
-លេខ: 33
 ```
 
-Name, price (riel), category and stock are required. Size (ទំហំ) and the item number (លេខ) are
-optional: without a number the sheet gives the next free one, and a number another product already
-uses is refused. The price label can be spelled តំម្តៃ, តម្លៃ or តំលៃ. English labels (`name`, `price`,
-`size`, `category`, `stock`, `id`, `description`) and Khmer digits work too. If something is missing,
+Name, price (riel), category and stock are required; size (ទំហំ) is optional. The item number is
+never typed: the sheet gives each new product the next free number, shown on the card once it's
+published. The price label can be spelled តំម្តៃ, តម្លៃ or តំលៃ. English labels (`name`, `price`,
+`size`, `category`, `stock`, `description`) and Khmer digits work too. If something is missing,
 reply to the bot's message with just those lines (or edit the caption).
 
 Sizes go in a `size` column if the sheet has one (the website then shows "Size: …" in the product
