@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <title>Sambo Store Register</title>
+    <link rel="stylesheet" href="css/pos.css?v=d9068121">
+</head>
+<body>
+    <!-- Login (once per tablet; stays logged in for 30 days) -->
+    <section id="login-screen" class="login-screen" hidden>
+        <form id="login-form" class="login-card">
+            <h1>Sambo Store</h1>
+            <p class="muted">Register</p>
+            <input type="password" id="login-password" placeholder="Shop password" autocomplete="current-password" required>
+            <button type="submit" class="btn primary big">Open register</button>
+            <p id="login-error" class="error" role="alert"></p>
+        </form>
+    </section>
+
+    <!-- Register -->
+    <div id="register" class="register" hidden>
+        <header class="topbar">
+            <h1>Sambo Store</h1>
+            <button id="sync-status" class="sync" type="button"></button>
+            <nav>
+                <button id="btn-today" class="btn ghost" type="button">Today's sales</button>
+                <button id="btn-records" class="btn ghost" type="button">Records</button>
+                <button id="btn-settings" class="btn ghost icon" type="button" aria-label="Settings">⚙</button>
+            </nav>
+        </header>
+
+        <main class="layout">
+            <section class="catalog">
+                <div class="catalog-tools">
+                    <input type="search" id="search" placeholder="Search name or item number" autocomplete="off">
+                    <button id="btn-reload-products" class="btn ghost icon" type="button" aria-label="Reload products">↻</button>
+                </div>
+                <div id="categories" class="chips"></div>
+                <div id="products" class="grid"></div>
+            </section>
+
+            <aside id="bill" class="bill">
+                <div class="bill-head">
+                    <h2>Bill</h2>
+                    <button id="btn-close-bill" class="btn ghost narrow-only" type="button">Hide</button>
+                    <button id="btn-clear-bill" class="btn ghost" type="button">Clear</button>
+                </div>
+                <div id="bill-lines" class="bill-lines"></div>
+                <div class="bill-totals">
+                    <div class="row"><span>Subtotal</span><span id="bill-subtotal">0៛</span></div>
+                    <div class="row">
+                        <label for="bill-discount">Discount on bill</label>
+                        <input id="bill-discount" class="money-input" inputmode="numeric" autocomplete="off" placeholder="0">
+                    </div>
+                    <div class="row total"><span>Total</span><span id="bill-total">0៛</span></div>
+                    <div class="pay-buttons">
+                        <button id="btn-pay-cash" class="btn primary big" type="button">Cash</button>
+                        <button id="btn-pay-aba" class="btn aba big" type="button">ABA</button>
+                    </div>
+                </div>
+            </aside>
+        </main>
+
+        <!-- Narrow screens: the bill opens from this bar -->
+        <button id="bill-bar" class="bill-bar narrow-only" type="button"></button>
+    </div>
+
+    <!-- Item typed by hand -->
+    <dialog id="custom-dialog">
+        <form id="custom-form" method="dialog" class="dialog-body">
+            <h2>Other item</h2>
+            <label>Name <input id="custom-name" maxlength="100" required autocomplete="off"></label>
+            <label>Price (riel) <input id="custom-price" class="money-input" inputmode="numeric" required autocomplete="off"></label>
+            <label>Quantity <input id="custom-qty" inputmode="numeric" value="1" autocomplete="off"></label>
+            <div class="dialog-actions">
+                <button type="button" class="btn ghost" data-close>Cancel</button>
+                <button type="submit" class="btn primary">Add to bill</button>
+            </div>
+        </form>
+    </dialog>
+
+    <!-- Cash payment -->
+    <dialog id="cash-dialog">
+        <form id="cash-form" method="dialog" class="dialog-body">
+            <h2>Cash</h2>
+            <div class="due">Total <strong id="cash-total"></strong></div>
+            <label>Money received <input id="cash-received" class="money-input big-input" inputmode="numeric" autocomplete="off"></label>
+            <div id="cash-quick" class="quick"></div>
+            <div id="cash-change" class="change"></div>
+            <div class="dialog-actions">
+                <button type="button" class="btn ghost" data-close>Back</button>
+                <button type="submit" id="cash-complete" class="btn primary big">Complete sale</button>
+            </div>
+        </form>
+    </dialog>
+
+    <!-- ABA payment -->
+    <dialog id="aba-dialog">
+        <form id="aba-form" method="dialog" class="dialog-body">
+            <h2>ABA</h2>
+            <div class="due">Total <strong id="aba-total"></strong></div>
+            <p>Ask the customer to send this amount to the shop's ABA account.
+               <strong>Check in your ABA app that the money arrived</strong> before you tap the button.</p>
+            <div class="dialog-actions">
+                <button type="button" class="btn ghost" data-close>Back</button>
+                <button type="submit" id="aba-complete" class="btn aba big">Money arrived: complete sale</button>
+            </div>
+        </form>
+    </dialog>
+
+    <!-- After a sale -->
+    <dialog id="done-dialog">
+        <div class="dialog-body">
+            <h2>Sale complete <span id="done-code" class="muted"></span></h2>
+            <div id="done-change" class="change"></div>
+            <p id="done-status" class="status"></p>
+            <div class="dialog-actions">
+                <button type="button" id="done-print" class="btn ghost big">Print receipt</button>
+                <button type="button" class="btn primary big" data-close>New sale</button>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- Today's sales (reprint / cancel) -->
+    <dialog id="sales-dialog" class="wide">
+        <div class="dialog-body">
+            <div class="dialog-head">
+                <h2>Today's sales</h2>
+                <button type="button" class="btn ghost" data-close>Close</button>
+            </div>
+            <div id="sales-list"></div>
+        </div>
+    </dialog>
+
+    <!-- One sale -->
+    <dialog id="sale-dialog">
+        <div class="dialog-body">
+            <div id="sale-receipt" class="receipt-preview"></div>
+            <p id="sale-note" class="status"></p>
+            <div class="dialog-actions">
+                <button type="button" class="btn ghost" data-close>Back</button>
+                <button type="button" id="sale-cancel" class="btn danger">Cancel sale</button>
+                <button type="button" id="sale-remove" class="btn danger">Remove from tablet</button>
+                <button type="button" id="sale-print" class="btn primary">Print receipt</button>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- Cancel a sale -->
+    <dialog id="cancel-dialog">
+        <form id="cancel-form" method="dialog" class="dialog-body">
+            <h2>Cancel sale <span id="cancel-code" class="muted"></span></h2>
+            <p>The sale stays in the records, marked as cancelled.</p>
+            <label>Reason <input id="cancel-reason" maxlength="200" required autocomplete="off" placeholder="e.g. customer returned the items"></label>
+            <p id="cancel-error" class="error" role="alert"></p>
+            <div class="dialog-actions">
+                <button type="button" class="btn ghost" data-close>Back</button>
+                <button type="submit" id="cancel-submit" class="btn danger">Cancel sale</button>
+            </div>
+        </form>
+    </dialog>
+
+    <!-- Owner password for the records -->
+    <dialog id="owner-dialog">
+        <form id="owner-form" method="dialog" class="dialog-body">
+            <h2>Records</h2>
+            <input type="password" id="owner-password" placeholder="Owner password" autocomplete="off" required>
+            <p id="owner-error" class="error" role="alert"></p>
+            <div class="dialog-actions">
+                <button type="button" class="btn ghost" data-close>Cancel</button>
+                <button type="submit" class="btn primary">Open records</button>
+            </div>
+        </form>
+    </dialog>
+
+    <!-- Sales records (owner) -->
+    <dialog id="records-dialog" class="wide">
+        <div class="dialog-body">
+            <div class="dialog-head">
+                <h2>Records</h2>
+                <input type="date" id="records-day">
+                <button type="button" class="btn ghost" data-close>Close</button>
+            </div>
+            <p id="records-warning" class="warning" hidden></p>
+            <div id="records-summary" class="tiles"></div>
+            <div class="cash-check">
+                <h3>Cash check</h3>
+                <label>Cash in drawer at opening <input id="records-start" class="money-input" inputmode="numeric" autocomplete="off" placeholder="0"></label>
+                <label>Cash counted now <input id="records-counted" class="money-input" inputmode="numeric" autocomplete="off" placeholder="0"></label>
+                <div id="records-check"></div>
+            </div>
+            <h3>Sales</h3>
+            <div id="records-list"></div>
+        </div>
+    </dialog>
+
+    <!-- Settings -->
+    <dialog id="settings-dialog">
+        <div class="dialog-body">
+            <h2>Settings</h2>
+            <fieldset>
+                <legend>Receipt paper</legend>
+                <label class="inline"><input type="radio" name="paper" value="58"> 58 mm</label>
+                <label class="inline"><input type="radio" name="paper" value="80"> 80 mm</label>
+            </fieldset>
+            <button type="button" id="settings-test-print" class="btn ghost">Print a test receipt</button>
+            <div class="dialog-actions">
+                <button type="button" id="settings-logout" class="btn danger">Log out this tablet</button>
+                <button type="button" class="btn primary" data-close>Done</button>
+            </div>
+        </div>
+    </dialog>
+
+    <div id="print-area"></div>
+    <div id="toast" class="toast" role="status"></div>
+
+    <!-- Scripts share the page's global scope: a file may only use, at load time,
+         what earlier files define. -->
+    <script src="js/config.js?v=61089a2e"></script>
+    <script src="js/utils.js?v=ad210ad2"></script>
+    <script src="js/sheet.js?v=577a043b"></script>
+    <script src="js/pos-core.js?v=ff66226f"></script>
+    <script src="js/pos-receipt.js?v=b94647a5"></script>
+    <script src="js/pos-catalog.js?v=0833cdb9"></script>
+    <script src="js/pos-bill.js?v=e49a3997"></script>
+    <script src="js/pos-pay.js?v=6d73fb11"></script>
+    <script src="js/pos-sales.js?v=4dec9233"></script>
+    <script src="js/pos-app.js?v=98f1b126"></script>
+</body>
+</html>

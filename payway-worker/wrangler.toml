@@ -32,9 +32,18 @@ CHANNEL_CHAT_ID = "-1003236240367"
 name = "LISTINGS"
 class_name = "ListingDesk"
 
+# The shop register (pos.html) keeps every sale here
+[[durable_objects.bindings]]
+name = "POS"
+class_name = "PosLedger"
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["ListingDesk"]
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["PosLedger"]
 
 # For production:
 # 1. Change PAYWAY_BASE_URL to "https://checkout.payway.com.kh"
@@ -47,6 +56,8 @@ new_sqlite_classes = ["ListingDesk"]
 #   npx wrangler secret put TELEGRAM_CHAT_ID
 #   npx wrangler secret put TELEGRAM_WEBHOOK_SECRET
 #   npx wrangler secret put SHEET_WRITE_SECRET
+#   npx wrangler secret put POS_PASSWORD
+#   npx wrangler secret put POS_OWNER_PASSWORD
 #
 # NOTIFY_SECRET is no longer used and can be removed:
 #   npx wrangler secret delete NOTIFY_SECRET
