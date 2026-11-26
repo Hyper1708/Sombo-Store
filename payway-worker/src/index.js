@@ -15,12 +15,17 @@
  * POST /api/telegram/setup  → One-time: point the bot's webhook at this Worker
  * GET  /photos/<key>        → Product photos, only when they are stored in R2 (see wrangler.toml)
  *
+ * Shop register (pos.html, see src/pos/):
+ * POST /api/pos/*           → Password login, saving and cancelling sales, day records
+ *
  * Secrets (set via: npx wrangler secret put <NAME>):
  *   API_KEY                 — ABA PayWay API key (also signs order tokens)
  *   TELEGRAM_BOT_TOKEN      — Telegram bot token (also verifies Mini App users)
  *   TELEGRAM_CHAT_ID        — Store owner Telegram chat ID
  *   TELEGRAM_WEBHOOK_SECRET — Proves webhook calls really come from Telegram
  *   SHEET_WRITE_SECRET      — Shared with the Google Apps Script that adds product rows
+ *   POS_PASSWORD            — Opens the shop register on the tablet
+ *   POS_OWNER_PASSWORD      — Opens the register's sales records
  *
  * Vars in wrangler.toml (non-sensitive):
  *   MERCHANT_ID, PAYWAY_BASE_URL, PRODUCTS_URL, ALLOWED_ORIGIN (optional),
@@ -28,8 +33,10 @@
  */
 
 import { telegram } from './listings/telegram.js';
+import { handlePos } from './pos/routes.js';
 
 export { ListingDesk } from './listings/desk.js';
+export { PosLedger } from './pos/ledger.js';
 
 const ENDPOINTS = {
   PURCHASE: '/api/payment-gateway/v1/payments/purchase',
@@ -679,6 +686,10 @@ export default {
         return jsonResponse({ error: 'Invalid request body' }, 400, cors);
       }
 
+      if (url.pathname.startsWith('/api/pos/')) {
+        const { status, data } = await handlePos(url.pathname, body, request, env);
+        return jsonResponse(data, status, cors);
+      }
       if (url.pathname === '/api/purchase') {
         return jsonResponse(await createPayment(body, env), 200, cors);
       }

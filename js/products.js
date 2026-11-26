@@ -3,40 +3,12 @@
 let allProducts = [];
 let categories = new Set();
 
-// Photos added by the listing bot are full https links (Google Drive or R2).
-// A Drive share link pasted by hand (…/file/d/<id>/view or …?id=<id>) becomes a direct image link.
-// Older rows hold a file name, sometimes with a folder; only the name matters.
-const fixImagePath = (path) => {
-    const value = String(path ?? '').trim();
-    if (!value) return '';
-    const drive = value.match(/drive\.google\.com\/(?:file\/d\/|(?:open|uc|thumbnail)\?(?:[^#]*&)?id=)([\w-]{20,})/);
-    if (drive) return `https://lh3.googleusercontent.com/d/${drive[1]}`;
-    if (/^https:\/\//i.test(value)) return value;
-    const filename = value.split(/[\\\/]/).pop();
-    return `${PRODUCT_IMAGES_DIR}/${filename}`;
-};
-
 const loadProductsFromSheet = async () => {
     try {
         const response = await fetch(PRODUCTS_SHEETS_URL);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const products = await response.json();
-
-        // Normalize all keys to lowercase to handle any sheet column casing
-        const normalized = products.map(p => {
-            const obj = {};
-            Object.keys(p).forEach(k => { obj[k.toLowerCase().trim()] = p[k]; });
-            // Stray spaces (and invisible characters some Khmer keyboards type) in a category
-            // cell would otherwise create a second, duplicate category
-            if (obj.category != null) {
-                obj.category = String(obj.category)
-                    .replace(/[­​‎‏⁠﻿]/g, '')
-                    .replace(/\s+/g, ' ').trim();
-            }
-            return obj;
-        });
-
-        allProducts = normalized.filter(p => p.name && p.name.toString().trim() !== '');
+        allProducts = readProductRows(products);
         categories.clear();
         allProducts.forEach(p => {
             if (p.category) categories.add(p.category.toLowerCase());
